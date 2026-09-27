@@ -19,7 +19,7 @@
       "reward": 120,
       "difficulty": "쉬움",
       "season": "9월 추천",
-      "growthAssets": {
+      "growthImages": {
         "seed": "assets/growth/calendula/seed.webp",
         "germination": "assets/growth/calendula/germination.webp",
         "sprout": "assets/growth/calendula/sprout.webp",
