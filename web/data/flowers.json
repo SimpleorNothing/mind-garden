@@ -1,13 +1,13 @@
 {
-  "version": 1,
-  "updatedAt": "2026-09-27",
+  "version": 2,
+  "updatedAt": "2026-09-28",
   "species": [
     {
       "id": "calendula",
       "name": "금잔화",
       "nameEn": "Calendula",
       "icon": "🟠",
-      "seedPrice": 40,
+      "seedPrice": 0,
       "growthMinutes": 90,
       "stageMinutes": [
         10,
@@ -33,7 +33,7 @@
       "name": "수레국화",
       "nameEn": "Cornflower",
       "icon": "🔵",
-      "seedPrice": 60,
+      "seedPrice": 0,
       "growthMinutes": 120,
       "stageMinutes": [
         10,
@@ -59,7 +59,7 @@
       "name": "팬지",
       "nameEn": "Pansy",
       "icon": "🟣",
-      "seedPrice": 80,
+      "seedPrice": 0,
       "growthMinutes": 150,
       "stageMinutes": [
         10,
@@ -85,7 +85,7 @@
       "name": "니겔라",
       "nameEn": "Nigella",
       "icon": "💠",
-      "seedPrice": 100,
+      "seedPrice": 0,
       "growthMinutes": 180,
       "stageMinutes": [
         10,
