@@ -11,15 +11,23 @@ function save(){localStorage.plantX=px;localStorage.plantY=py;localStorage.plant
 function setMode(m){mode=m;room.classList.toggle('edit-plant',m==='plant');room.classList.toggle('edit-room',m==='room');editPlant.classList.toggle('on',m==='plant');editRoom.classList.toggle('on',m==='room');target.textContent=m==='plant'?'화분 조절':'내 집 이미지 조절'}
 function beginEdit(m){editing=true;room.classList.add('editing');setMode(m)}
 function point(e){let r=room.getBoundingClientRect();return{x:(e.clientX-r.left)/r.width*100,y:(e.clientY-r.top)/r.height*100}}
-plant.addEventListener('pointerdown',e=>{if(!editing)beginEdit('plant');if(mode!=='plant')return;drag=true;pid=e.pointerId;try{plant.setPointerCapture(pid)}catch(_){};e.preventDefault()});
-roomPhoto.addEventListener('pointerdown',e=>{if(!editing)beginEdit('room');if(mode!=='room')return;drag=true;pid=e.pointerId;let p=point(e);startX=p.x;startY=p.y;baseX=rx;baseY=ry;try{roomPhoto.setPointerCapture(pid)}catch(_){};e.preventDefault()});
+let holdTimer=null,holdStart=null;
+function cancelHold(){if(holdTimer){clearTimeout(holdTimer);holdTimer=null}holdStart=null}
+function armHold(e,m,el){if(editing){if(mode!==m)return;drag=true;pid=e.pointerId;if(m==='room'){let p=point(e);startX=p.x;startY=p.y;baseX=rx;baseY=ry}try{el.setPointerCapture(pid)}catch(_){};e.preventDefault();return}
+holdStart={x:e.clientX,y:e.clientY};pid=e.pointerId;
+holdTimer=setTimeout(()=>{holdTimer=null;beginEdit(m);drag=true;if(m==='room'){let p=point(e);startX=p.x;startY=p.y;baseX=rx;baseY=ry}try{el.setPointerCapture(pid)}catch(_){};if(navigator.vibrate)navigator.vibrate(35)},800)}
+function holdMove(e){if(!holdTimer||!holdStart)return;if(Math.hypot(e.clientX-holdStart.x,e.clientY-holdStart.y)>12)cancelHold()}
+plant.addEventListener('pointerdown',e=>armHold(e,'plant',plant));
+roomPhoto.addEventListener('pointerdown',e=>armHold(e,'room',roomPhoto));
+plant.addEventListener('pointermove',holdMove);roomPhoto.addEventListener('pointermove',holdMove);
+plant.addEventListener('pointerup',()=>{if(holdTimer)cancelHold()});roomPhoto.addEventListener('pointerup',()=>{if(holdTimer)cancelHold()});
 room.addEventListener('pointermove',e=>{if(!drag||e.pointerId!==pid)return;let p=point(e);if(mode==='plant'){px=Math.max(4,Math.min(96,p.x));py=Math.max(8,Math.min(94,p.y));plantPlace()}else{rx=Math.max(0,Math.min(100,baseX+p.x-startX));ry=Math.max(0,Math.min(100,baseY+p.y-startY));roomPlace()}e.preventDefault()});
 function end(){cancelHold();drag=false;pid=null}room.addEventListener('pointerup',end);room.addEventListener('pointercancel',end);
 editPlant.onclick=e=>{e.stopPropagation();setMode('plant')};editRoom.onclick=e=>{e.stopPropagation();setMode('room')};
 minus.onclick=e=>{e.stopPropagation();if(mode==='plant')ps=Math.max(55,ps-12);else rs=Math.max(.6,rs-.08);plantPlace();roomPlace()};
 plus.onclick=e=>{e.stopPropagation();if(mode==='plant')ps=Math.min(280,ps+12);else rs=Math.min(2.5,rs+.08);plantPlace();roomPlace()};
 done.onclick=e=>{e.stopPropagation();save();editing=false;drag=false;room.classList.remove('editing','edit-plant','edit-room')};
-q('#photo').addEventListener('change',()=>setTimeout(()=>beginEdit('room'),100));
+
 plantPlace();roomPlace()})();
 ;(()=>{const light=q('#liveLight'),sun=q('#sun'),shadow=q('#plantShadow');const rise=6*60+18,set=18*60+24;
 function live(){if(room.dataset.live==='0'){room.classList.remove('live-night','live-dawn','live-day','live-evening');sun.style.opacity='0';shadow.style.opacity='0';return}const n=new Date(),m=n.getHours()*60+n.getMinutes(),day=m>=rise&&m<=set,p=Math.max(0,Math.min(1,(m-rise)/(set-rise))),noon=(rise+set)/2,side=Math.max(-1,Math.min(1,(m-noon)/((set-rise)/2)));
@@ -43,3 +51,4 @@ virtual.querySelectorAll('button').forEach(b=>b.onclick=()=>{virtualId=b.dataset
 q('#savePlant').onclick=()=>{if(!name.value.trim()||!place.value.trim())return alert('식물 이름과 장소를 입력해 주세요.');if(imageMode==='mine'&&!pendingImage)return alert('내 이미지를 선택해 주세요.');if(imageMode==='virtual'&&!virtualId)return alert('가상 이미지를 선택해 주세요.');const added={name:name.value.trim(),place:place.value.trim(),live:live.checked,image:imageMode==='mine'?pendingImage:'',virtual:imageMode==='virtual'?virtualId:''};plants.push(added);try{localStorage.myPlants=JSON.stringify(plants)}catch(_){plants.pop();alert('저장 공간이 부족합니다. 사진을 더 압축해 다시 시도해 주세요.');return}if(added.image){const rp=q('#roomPhoto');rp.src=added.image;room.classList.add('has-photo');room.style.backgroundImage='none';room.style.background='';}else{q('#roomPhoto').removeAttribute('src');room.classList.remove('has-photo');room.style.background=bgFor(added.virtual)};room.dataset.live=added.live?'1':'0';name.value='';place.value='';pendingImage='';virtualId='';add.classList.remove('open');render();home.classList.remove('open')};
 render()})();
 ;(()=>{['click','dblclick','contextmenu'].forEach(t=>{plant.addEventListener(t,e=>{if(!editing){e.preventDefault();e.stopPropagation()}},true);roomPhoto.addEventListener(t,e=>{if(!editing){e.preventDefault();e.stopPropagation()}},true)});})();
+;(()=>{['click','dblclick','contextmenu'].forEach(t=>{plant.addEventListener(t,e=>{if(!room.classList.contains('editing')){e.preventDefault();e.stopPropagation()}},true);roomPhoto.addEventListener(t,e=>{if(!room.classList.contains('editing')){e.preventDefault();e.stopPropagation()}},true)});})();
