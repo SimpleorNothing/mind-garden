@@ -43,10 +43,10 @@ class MainActivity : AppCompatActivity() {
     override fun onActivityResult(r:Int,c:Int,d:Intent?){super.onActivityResult(r,c,d);if(r==7&&c==Activity.RESULT_OK){d?.data?.let{try{contentResolver.takePersistableUriPermission(it,Intent.FLAG_GRANT_READ_URI_PERMISSION)}catch(_:Exception){};getSharedPreferences("garden",0).edit().putString("bg",it.toString()).apply();garden.setPhoto(it)}}}
 }
 
-class GardenView(c:android.content.Context):View(c){
+class GardenView(private val context:android.content.Context):View(context){
     var minute=720; var weather=0; private var photo:Bitmap?=null
     private val p=Paint(Paint.ANTI_ALIAS_FLAG); private val rise=378; private val set=1104
-    fun setPhoto(u:Uri){try{c.contentResolver.openInputStream(u)?.use{photo=BitmapFactory.decodeStream(it)};invalidate()}catch(_:Exception){}}
+    fun setPhoto(u:Uri){try{context.contentResolver.openInputStream(u)?.use{stream -> photo=BitmapFactory.decodeStream(stream)};invalidate()}catch(_:Exception){}}
     override fun onDraw(cv:Canvas){super.onDraw(cv);val w=width.toFloat();val h=height.toFloat();p.color=Color.rgb(190,202,199);cv.drawRoundRect(0f,0f,w,h,38f,38f,p)
         photo?.let{val s=max(w/it.width,h/it.height);val dw=it.width*s;val dh=it.height*s;val dst=RectF((w-dw)/2,(h-dh)/2,(w+dw)/2,(h+dh)/2);p.colorFilter=ColorMatrixColorFilter(ColorMatrix().apply{setSaturation(.86f)});cv.drawBitmap(it,null,dst,p);p.colorFilter=null}
         val day=minute in rise..set; val solarNoon=(rise+set)/2f; val side=((minute-solarNoon)/((set-rise)/2f)).coerceIn(-1f,1f);val prog=((minute-rise)/(set-rise).toFloat()).coerceIn(0f,1f);val elev=if(day) sin(Math.PI*prog).toFloat() else 0f
