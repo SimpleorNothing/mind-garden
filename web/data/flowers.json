@@ -44,7 +44,15 @@
       ],
       "reward": 150,
       "difficulty": "보통",
-      "season": "9월 추천"
+      "season": "9월 추천",
+      "growthImages": {
+        "seed": "assets/growth/cornflower/seed.webp",
+        "germination": "assets/growth/cornflower/germination.webp",
+        "sprout": "assets/growth/cornflower/sprout.webp",
+        "leaves": "assets/growth/cornflower/true_leaves.webp",
+        "bud": "assets/growth/cornflower/bud.webp",
+        "bloom": "assets/growth/cornflower/bloom.webp"
+      }
     },
     {
       "id": "pansy",
@@ -62,7 +70,15 @@
       ],
       "reward": 180,
       "difficulty": "보통+",
-      "season": "9월~초10월"
+      "season": "9월~초10월",
+      "growthImages": {
+        "seed": "assets/growth/pansy/seed.webp",
+        "germination": "assets/growth/pansy/germination.webp",
+        "sprout": "assets/growth/pansy/sprout.webp",
+        "leaves": "assets/growth/pansy/true_leaves.webp",
+        "bud": "assets/growth/pansy/bud.webp",
+        "bloom": "assets/growth/pansy/bloom.webp"
+      }
     },
     {
       "id": "nigella",
@@ -80,7 +96,15 @@
       ],
       "reward": 220,
       "difficulty": "어려움",
-      "season": "9월 추천"
+      "season": "9월 추천",
+      "growthImages": {
+        "seed": "assets/growth/nigella/seed.webp",
+        "germination": "assets/growth/nigella/germination.webp",
+        "sprout": "assets/growth/nigella/sprout.webp",
+        "leaves": "assets/growth/nigella/true_leaves.webp",
+        "bud": "assets/growth/nigella/bud.webp",
+        "bloom": "assets/growth/nigella/bloom.webp"
+      }
     }
   ]
 }
