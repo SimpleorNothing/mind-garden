@@ -17,6 +17,19 @@ const CATALOG={
   ]
 };
 
+function loadFlowerCatalogFromGitHub(){
+  fetch('data/flowers.json?v=1',{cache:'no-cache'})
+    .then(r=>{if(!r.ok)throw new Error('flower catalog '+r.status);return r.json()})
+    .then(data=>{
+      if(!data||!Array.isArray(data.species)||!data.species.length)return;
+      CATALOG.species=data.species;
+      applyCosmetics();draw();
+      if(window.renderGardenRewards)window.renderGardenRewards();
+    })
+    .catch(()=>{});
+}
+loadFlowerCatalogFromGitHub();
+
 function localDateKey(d=new Date()){
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
