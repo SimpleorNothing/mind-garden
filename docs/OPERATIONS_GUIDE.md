@@ -54,35 +54,36 @@
 - 관리 부족으로 꽃이 죽거나 모든 진행이 초기화되지는 않도록 한다.
 
 ## 6. 성장 이미지 운영 규칙
+- 현재 운영 저장소는 **GitHub `SimpleorNothing/mind-garden`** 하나로 통일한다.
+- 꽃 카탈로그: `web/data/flowers.js`
+- 생장 이미지: `web/assets/growth/{species_key}/{stage_key}.webp`
 - 이미지 포맷: WebP 권장
-- 권장 크기: 768×768 또는 그 이하
-- 파일 경로 규칙: `growth/{species_key}/{stage_key}.webp`
-- 예: `growth/calendula/bloom.webp`
+- 권장 크기: 768×768 이하
 - 동일 종/동일 단계의 기본 이미지는 공통 사용한다.
-- 추후 관리점수나 랜덤 변형이 필요하면 `variant_key`를 추가한다.
-- 새 이미지 교체 시 기존 오브젝트를 덮어쓰기보다 `asset_version`을 올리고 D1 메타데이터를 갱신한다.
+- 새 이미지 교체 시 파일 경로 또는 데이터 버전을 갱신하고 웹에서 먼저 검증한다.
+- 사용자별 포인트/보유 씨앗/진행상태는 현재 기기 localStorage에 저장한다.
+- GitHub에는 사용자별 쓰기 데이터를 저장하지 않는다.
 
-## 7. Cloudflare 저장 구조
-### D1
-정형 데이터 저장:
-- 꽃 종류
-- 난이도/가격/성장시간/보상
-- 성장 단계
-- R2 object key
-- image URL
-- asset version
-- 활성/비활성 상태
+## 7. GitHub 데이터 구조
+```
+web/
+├─ data/
+│  └─ flowers.js
+└─ assets/
+   └─ growth/
+      ├─ calendula/
+      │  ├─ seed.webp
+      │  ├─ germination.webp
+      │  ├─ sprout.webp
+      │  ├─ true_leaves.webp
+      │  ├─ bud.webp
+      │  └─ bloom.webp
+      ├─ cornflower/
+      ├─ pansy/
+      └─ nigella/
+```
 
-### R2
-실제 이미지 바이너리 저장:
-- `growth/calendula/seed.webp`
-- `growth/calendula/germination.webp`
-- `growth/calendula/sprout.webp`
-- `growth/calendula/true_leaves.webp`
-- `growth/calendula/bud.webp`
-- `growth/calendula/bloom.webp`
-
-이미지 바이너리를 D1 BLOB로 직접 넣지 않는다. R2에 보관하고 D1이 위치를 가리키는 방식으로 운영한다.
+현재 단계에서는 Cloudflare D1/R2를 사용하지 않는다. 마켓 공개 후 공개 정원, 로그인, 여러 기기 동기화처럼 서버 쓰기 기능이 필요해지는 시점에 별도 백엔드 DB/Object Storage를 검토한다.
 
 ## 8. 공개 정원 확장 원칙
 - 완성 꽃은 기본 `private`
@@ -98,14 +99,14 @@
 - 동일 화분/배경 톤이 유지되는가
 - 텍스트/워터마크/불필요한 물체가 없는가
 - 모바일에서 식물이 작게 보이지 않는가
-- R2 object key와 D1 stage key가 정확히 일치하는가
+- `flowers.json`의 stage key와 GitHub 이미지 경로가 정확히 일치하는가
 
 ## 10. 변경 절차
 1. 운영 가이드 수정
 2. 카탈로그/DB schema 또는 seed 갱신
 3. 성장 이미지 생성 및 검수
-4. R2 업로드
-5. D1 메타데이터 갱신
+4. GitHub 생장 이미지 경로에 저장
+5. `web/data/flowers.js` 갱신
 6. 웹에서 우선 검증
 7. 사용자 확인 후 APK 빌드
 

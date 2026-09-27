@@ -88,3 +88,5 @@
 #plant svg{transition:opacity .25s}
 
 .longPressHint{margin:0 0 10px;color:#7b837b;font-size:11px;line-height:1.45}.plantItem{touch-action:pan-y;-webkit-user-select:none;user-select:none}
+
+.growthStageImage{display:block;width:100%;height:100%;object-fit:contain;pointer-events:none;user-select:none;-webkit-user-drag:none}
