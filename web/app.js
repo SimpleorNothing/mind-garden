@@ -343,7 +343,7 @@ plantPlace();roomPlace()})();
   room.insertBefore(lights,q('#plantShadow'));
 })();
 ;(()=>{const light=q('#liveLight'),sun=q('#sun'),shadow=q('#plantShadow');const rise=6*60+18,set=18*60+24;
-function live(){if(room.dataset.live==='0'){room.classList.remove('live-night','live-twilight','live-dawn','live-day','live-evening');sun.style.opacity='0';shadow.style.opacity='0';return}const n=new Date(),m=n.getHours()*60+n.getMinutes(),day=m>=rise&&m<=set,p=Math.max(0,Math.min(1,(m-rise)/(set-rise))),noon=(rise+set)/2,side=Math.max(-1,Math.min(1,(m-noon)/((set-rise)/2)));
+function live(){if(!room.classList.contains('has-photo')){room.classList.remove('live-night','live-twilight','live-dawn','live-day','live-evening');sun.style.opacity='0';shadow.style.opacity='0';return}if(room.dataset.live==='0'){room.classList.remove('live-night','live-twilight','live-dawn','live-day','live-evening');sun.style.opacity='0';shadow.style.opacity='0';return}const n=new Date(),m=n.getHours()*60+n.getMinutes(),day=m>=rise&&m<=set,p=Math.max(0,Math.min(1,(m-rise)/(set-rise))),noon=(rise+set)/2,side=Math.max(-1,Math.min(1,(m-noon)/((set-rise)/2)));
 room.classList.remove('live-night','live-twilight','live-dawn','live-day','live-evening');
 if(!day){room.classList.add('live-night');if(m>set&&m<20*60)room.classList.add('live-twilight')}else if(p<.16)room.classList.add('live-dawn');else if(p>.82)room.classList.add('live-evening');else room.classList.add('live-day');
 if(day){sun.style.left=(7+86*p)+'%';sun.style.right='auto';sun.style.top=(38-27*Math.sin(Math.PI*p))+'px';sun.style.opacity='1';sun.style.filter='brightness('+(1+.18*Math.sin(Math.PI*p))+')';}
@@ -351,6 +351,37 @@ const pr=plant.getBoundingClientRect(),rr=room.getBoundingClientRect(),cx=pr.lef
 shadow.style.left=cx+'px';shadow.style.top=cy+'px';shadow.style.opacity=day?String(.18+.22*Math.abs(side)):'0';shadow.style.width=(55+105*Math.abs(side))+'px';shadow.style.transform='rotate('+(90+62*side)+'deg)';
 }
 live();setInterval(live,30000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)live()});window.addEventListener('pageshow',live);window.addEventListener('resize',live);new MutationObserver(live).observe(room,{attributes:true,attributeFilter:['data-live']});room.addEventListener('pointerup',()=>setTimeout(live,0));q('#editDone').addEventListener('click',()=>setTimeout(live,0));
+})();
+// Virtual scenes reflect weather only. Use an existing location permission, otherwise Seoul.
+;(()=>{
+  const states=['weather-clear','weather-cloudy','weather-rain','weather-snow'];
+  function show(code,location){
+    room.classList.remove(...states);
+    const state=[71,73,75,77,85,86].includes(code)?'weather-snow':([51,53,55,56,57,61,63,65,66,67,80,81,82,95,96,99].includes(code)?'weather-rain':([1,2,3,45,48].includes(code)?'weather-cloudy':'weather-clear'));
+    room.classList.add(state);
+    room.title='가상 배경 날씨 · '+location+' 기준';
+  }
+  async function update(){
+    let latitude=37.5665,longitude=126.978,location='서울';
+    try{
+      if(navigator.permissions&&navigator.geolocation){
+        const permission=await navigator.permissions.query({name:'geolocation'});
+        if(permission.state==='granted'){
+          const position=await new Promise((resolve,reject)=>navigator.geolocation.getCurrentPosition(resolve,reject,{timeout:5000,maximumAge:3600000}));
+          latitude=position.coords.latitude;longitude=position.coords.longitude;location='현재 위치';
+        }
+      }
+    }catch(_){}
+    try{
+      const url='https://api.open-meteo.com/v1/forecast?latitude='+latitude+'&longitude='+longitude+'&current=weather_code&timezone=auto';
+      const response=await fetch(url);
+      if(!response.ok)throw Error('weather unavailable');
+      const data=await response.json();
+      if(Number.isFinite(data.current?.weather_code))show(data.current.weather_code,location);
+    }catch(_){room.classList.remove(...states);room.removeAttribute('title')}
+  }
+  update();setInterval(update,30*60*1000);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)update()});
 })();
 ;(()=>{const home=q('#homeSheet'),add=q('#addSheet'),list=q('#plantList'),photo=q('#photo'),virtual=q('#virtualChoices'),name=q('#newName'),place=q('#newPlace'),live=q('#newLive');let imageMode='mine',virtualId='',pendingImage='';let plants=[];try{plants=JSON.parse(localStorage.myPlants||'[]')}catch(_){}
 function compressImage(file,cb){let r=new FileReader;r.onload=()=>{let im=new Image;im.onload=()=>{let max=1400,s=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);c.getContext('2d').drawImage(im,0,0,c.width,c.height);let out=c.toDataURL('image/jpeg',.78);cb(out)};im.src=r.result};r.readAsDataURL(file)}
