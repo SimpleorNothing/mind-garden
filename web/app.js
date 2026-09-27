@@ -1,4 +1,63 @@
-const q=s=>document.querySelector(s),room=q('#room'),plant=q('#plant'),time=q('#time'),stage=q('#stage'),rest=q('#rest'),msg=q('#msg'),bar=q('#bar'),next=q('#next');let total=+(localStorage.sun||0),running=false,start=0;function draw(){let t=total+(running?Date.now()-start:0),m=Math.floor(t/60000),s=Math.floor(t/1000)%60;time.textContent=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');let data=m>=60?['나무',60]:m>=30?['화분',60]:m>=10?['잎',30]:['새싹',10];stage.textContent=data[0];plant.style.transform='translateX(-50%) scale('+(1+Math.min(m,60)/300)+')';bar.style.width=Math.min(100,m/data[1]*100)+'%';next.textContent=m>=60?'오늘의 광합성 완료':('다음 성장까지 '+(data[1]-m)+'분')}setInterval(draw,1000);draw();rest.onclick=()=>{if(!running){running=true;start=Date.now();rest.textContent='휴식 종료';room.classList.add('active');msg.textContent='광합성 중이에요. 이제 화면을 내려놓아도 좋아요.'}else{total+=Date.now()-start;localStorage.sun=total;running=false;rest.textContent='햇살 휴식 시작';room.classList.remove('active');msg.textContent='잘 쉬었어요. 식물이 조금 더 자랐습니다.'}draw()};q('#water').onclick=()=>{plant.style.transform='translateX(-50%) scale(1.08)';setTimeout(()=>plant.style.transform='translateX(-50%)',450);msg.textContent='물을 천천히 마시고 있어요.'};q('#leaf').onclick=()=>{plant.style.filter='drop-shadow(0 12px 7px #0002) brightness(1.18)';setTimeout(()=>plant.style.filter='',700);msg.textContent='잎이 반짝반짝 깨끗해졌어요.'};const roomPhoto=q('#roomPhoto');function applyRoomPhoto(data){roomPhoto.src=data;room.classList.add('has-photo');room.style.backgroundImage='none'}q('#photo').onchange=e=>{let f=e.target.files[0];if(!f)return;let r=new FileReader;r.onload=()=>{applyRoomPhoto(r.result);try{localStorage.room=r.result}catch(_){}};r.readAsDataURL(f)};try{if(localStorage.room)applyRoomPhoto(localStorage.room)}catch(_){};
+const q=s=>document.querySelector(s),room=q('#room'),plant=q('#plant'),time=q('#time'),stage=q('#stage'),rest=q('#rest'),msg=q('#msg'),bar=q('#bar'),next=q('#next');
+let total=+(localStorage.sun||0),running=false,start=0,wakeLock=null;
+
+function draw(){
+  let t=total+(running?Date.now()-start:0),m=Math.floor(t/60000),s=Math.floor(t/1000)%60;
+  time.textContent=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+  let data=m>=60?['나무',60]:m>=30?['화분',60]:m>=10?['잎',30]:['새싹',10];
+  stage.textContent=data[0];
+  plant.style.transform='translateX(-50%) scale('+(1+Math.min(m,60)/300)+')';
+  bar.style.width=Math.min(100,m/data[1]*100)+'%';
+  next.textContent=m>=60?'오늘의 광합성 완료':('다음 성장까지 '+(data[1]-m)+'분')
+}
+setInterval(draw,1000);draw();
+
+async function setScreenAwake(on){
+  try{
+    if(window.AndroidBridge&&typeof window.AndroidBridge.setKeepScreenOn==='function'){
+      window.AndroidBridge.setKeepScreenOn(on);
+      return;
+    }
+    if(on&&'wakeLock' in navigator){
+      if(!wakeLock) wakeLock=await navigator.wakeLock.request('screen');
+    }else if(!on&&wakeLock){
+      await wakeLock.release();
+      wakeLock=null;
+    }
+  }catch(_){wakeLock=null}
+}
+
+function startRest(){
+  if(running)return;
+  running=true;
+  start=Date.now();
+  rest.textContent='휴식 종료';
+  room.classList.add('active');
+  msg.textContent='광합성 중이에요. 화면은 켜진 상태로 유지됩니다.';
+  setScreenAwake(true);
+  draw();
+}
+
+function stopRest(reason='manual'){
+  if(!running)return;
+  total+=Date.now()-start;
+  localStorage.sun=total;
+  running=false;
+  rest.textContent='햇살 휴식 시작';
+  room.classList.remove('active');
+  setScreenAwake(false);
+  msg.textContent=reason==='background'
+    ?'앱을 벗어나 햇살 휴식이 정지됐어요. 다시 시작해 주세요.'
+    :'잘 쉬었어요. 식물이 조금 더 자랐습니다.';
+  draw();
+}
+
+rest.onclick=()=>running?stopRest('manual'):startRest();
+window.mindGardenPauseForBackground=()=>stopRest('background');
+document.addEventListener('visibilitychange',()=>{if(document.hidden)stopRest('background')});
+window.addEventListener('pagehide',()=>stopRest('background'));
+
+q('#water').onclick=()=>{plant.style.transform='translateX(-50%) scale(1.08)';setTimeout(()=>plant.style.transform='translateX(-50%)',450);msg.textContent='물을 천천히 마시고 있어요.'};q('#leaf').onclick=()=>{plant.style.filter='drop-shadow(0 12px 7px #0002) brightness(1.18)';setTimeout(()=>plant.style.filter='',700);msg.textContent='잎이 반짝반짝 깨끗해졌어요.'};const roomPhoto=q('#roomPhoto');function applyRoomPhoto(data){roomPhoto.src=data;room.classList.add('has-photo');room.style.backgroundImage='none'}q('#photo').onchange=e=>{let f=e.target.files[0];if(!f)return;let r=new FileReader;r.onload=()=>{applyRoomPhoto(r.result);try{localStorage.room=r.result}catch(_){}};r.readAsDataURL(f)};try{if(localStorage.room)applyRoomPhoto(localStorage.room)}catch(_){};
 
 
 ;(()=>{const roomPhoto=q('#roomPhoto'),editPanel=q('#editPanel'),editPlant=q('#editPlant'),editRoom=q('#editRoom'),minus=q('#sizeMinus'),plus=q('#sizePlus'),done=q('#editDone'),target=q('#editTarget');
