@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "updatedAt": "2026-09-28",
   "storage": "github",
   "backgrounds": [
@@ -28,14 +28,14 @@
       "id": "tea-yard",
       "name": "첨부 사진 · 차 마시는 뜰",
       "type": "reference",
-      "image": "assets/backgrounds/tea-yard.jpg",
+      "image": "assets/backgrounds/tea-yard-clean.webp",
       "source": "user-upload"
     },
     {
       "id": "tea-yard2",
       "name": "첨부 사진 · 창가와 화분",
       "type": "reference",
-      "image": "assets/backgrounds/tea-yard2.jpg",
+      "image": "assets/backgrounds/tea-yard2-clean.webp",
       "source": "user-upload"
     }
   ]
