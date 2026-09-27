@@ -36,3 +36,13 @@
 @media (max-height:700px){.sheet{bottom:calc(78px + env(safe-area-inset-bottom))!important;max-height:calc(100dvh - 100px)!important}}
 /* scene editing must never be entered by a normal tap */
 #room:not(.editing) #editPanel{display:none!important}
+
+/* Sheet stacking: only the active sheet is interactive/visible. */
+.sheet{visibility:hidden;pointer-events:none}
+.sheet.open{visibility:visible;pointer-events:auto}
+#homeSheet.open:has(~ #addSheet.open){transform:translate(-50%,105%)!important;visibility:hidden!important;pointer-events:none!important}
+#addSheet{z-index:60}
+#addSheet.open{bottom:calc(16px + env(safe-area-inset-bottom))!important;max-height:calc(100dvh - 32px - env(safe-area-inset-bottom))!important}
+/* Edit controls exist only during deliberate long-press edit mode. */
+#editPanel{display:none!important}
+#room.editing + #editPanel,#room.editing ~ #editPanel{display:block!important}
