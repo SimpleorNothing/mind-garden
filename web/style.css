@@ -86,3 +86,5 @@
 .seedActions button:disabled{opacity:.4}
 #rest:disabled{opacity:.5}
 #plant svg{transition:opacity .25s}
+
+.longPressHint{margin:0 0 10px;color:#7b837b;font-size:11px;line-height:1.45}.plantItem{touch-action:pan-y;-webkit-user-select:none;user-select:none}
