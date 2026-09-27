@@ -111,7 +111,7 @@
 #plant.photo-growth{mix-blend-mode:multiply}
 #plant.photo-growth .growthStageImage{transform:scale(1.55);transform-origin:center 62%}
 
-#room.live-night #plant.photo-growth{filter:brightness(.72) saturate(.82)}
+#room.live-night #plant.photo-growth{filter:none}
 #plant.photo-growth[data-stage="empty"] .growthStageImage,#plant.photo-growth[data-stage="seed"] .growthStageImage{transform:translateY(-14%) scale(2.05)}
 
 /* Keep the outdoor view readable while the unlit interior falls into shadow. */
@@ -123,8 +123,8 @@
 #room.live-night.live-twilight.has-photo:not([data-live="0"]) #liveLight{
   background:radial-gradient(ellipse 56% 62% at 53% 43%,transparent 0%,rgba(8,12,22,.18) 57%,rgba(5,8,16,.55) 100%),linear-gradient(180deg,rgba(26,23,47,.15),rgba(52,35,49,.10) 54%,rgba(9,13,22,.22));
 }
-#room.live-night #plant.photo-growth{filter:brightness(.62) saturate(.76)}
-#room.live-night.live-twilight #plant.photo-growth{filter:brightness(.8) saturate(.86)}
+#room.live-night #plant.photo-growth{filter:none}
+#room.live-night.live-twilight #plant.photo-growth{filter:none}
 #room.live-night #plant:not(.photo-growth) svg{filter:brightness(.64) saturate(.8)}
 #room.live-night.live-twilight #plant:not(.photo-growth) svg{filter:brightness(.82) saturate(.9)}
 
