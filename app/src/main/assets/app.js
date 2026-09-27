@@ -14,7 +14,7 @@ function point(e){let r=room.getBoundingClientRect();return{x:(e.clientX-r.left)
 plant.addEventListener('pointerdown',e=>{if(!editing)beginEdit('plant');if(mode!=='plant')return;drag=true;pid=e.pointerId;try{plant.setPointerCapture(pid)}catch(_){};e.preventDefault()});
 roomPhoto.addEventListener('pointerdown',e=>{if(!editing)beginEdit('room');if(mode!=='room')return;drag=true;pid=e.pointerId;let p=point(e);startX=p.x;startY=p.y;baseX=rx;baseY=ry;try{roomPhoto.setPointerCapture(pid)}catch(_){};e.preventDefault()});
 room.addEventListener('pointermove',e=>{if(!drag||e.pointerId!==pid)return;let p=point(e);if(mode==='plant'){px=Math.max(4,Math.min(96,p.x));py=Math.max(8,Math.min(94,p.y));plantPlace()}else{rx=Math.max(0,Math.min(100,baseX+p.x-startX));ry=Math.max(0,Math.min(100,baseY+p.y-startY));roomPlace()}e.preventDefault()});
-function end(){drag=false;pid=null}room.addEventListener('pointerup',end);room.addEventListener('pointercancel',end);
+function end(){cancelHold();drag=false;pid=null}room.addEventListener('pointerup',end);room.addEventListener('pointercancel',end);
 editPlant.onclick=e=>{e.stopPropagation();setMode('plant')};editRoom.onclick=e=>{e.stopPropagation();setMode('room')};
 minus.onclick=e=>{e.stopPropagation();if(mode==='plant')ps=Math.max(55,ps-12);else rs=Math.max(.6,rs-.08);plantPlace();roomPlace()};
 plus.onclick=e=>{e.stopPropagation();if(mode==='plant')ps=Math.min(280,ps+12);else rs=Math.min(2.5,rs+.08);plantPlace();roomPlace()};
