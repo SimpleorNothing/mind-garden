@@ -6,24 +6,26 @@ let CATALOG={
   species:(window.MIND_GARDEN_FLOWERS&&window.MIND_GARDEN_FLOWERS.species)||[],
   pots:[
     {id:'ivory',name:'아이보리 화분',icon:'◯',price:0},
-    {id:'clay',name:'테라코타 화분',icon:'🟤',price:100},
-    {id:'moss',name:'모스 화분',icon:'🟢',price:150},
-    {id:'sage',name:'세이지 화분',icon:'🪴',milestone:'week3'}
+    {id:'clay',name:'테라코타 화분',icon:'🟤',price:0},
+    {id:'moss',name:'모스 화분',icon:'🟢',price:0},
+    {id:'sage',name:'세이지 화분',icon:'🪴',price:0}
   ],
   scenes:[
-    {id:'window',name:'햇살 창가',icon:'☀️',price:0},
-    {id:'warm',name:'따뜻한 거실',icon:'🛋️',price:150},
-    {id:'forest',name:'초록 정원',icon:'🌳',price:200}
+    {id:'window',name:'햇살 좋은 거실 창가',icon:'☀️',price:0,image:'sunny-living-room.webp'},
+    {id:'desk',name:'차분한 공부방 책상',icon:'📚',price:0,image:'calm-study-desk.webp'},
+    {id:'balcony',name:'초록빛 베란다 정원',icon:'🌿',price:0,image:'green-veranda-garden.webp'},
+    {id:'tea-yard',name:'차 마시는 뜰',icon:'🍵',price:0,image:'tea-yard-clean.webp'},
+    {id:'tea-yard2',name:'산이 보이는 창가',icon:'🏔️',price:0,image:'tea-yard2-clean.webp'}
   ]
 };
 
 function loadFlowerCatalogFromGitHub(){
-  fetch('data/flowers.json?v=1',{cache:'no-cache'})
+  fetch('data/flowers.json?v=3',{cache:'no-cache'})
     .then(r=>{if(!r.ok)throw new Error('flower catalog '+r.status);return r.json()})
     .then(data=>{
       if(!data||!Array.isArray(data.species)||!data.species.length)return;
       CATALOG.species=data.species;
-      applyCosmetics();draw();
+      refreshFlowerChoices();applyCosmetics();draw();
       if(window.renderGardenRewards)window.renderGardenRewards();
     })
     .catch(()=>{});
@@ -32,12 +34,12 @@ loadFlowerCatalogFromGitHub();
 
 async function loadGitHubFlowerCatalog(){
   try{
-    const res=await fetch('data/flowers.json?v=1',{cache:'no-store'});
+    const res=await fetch('data/flowers.json?v=3',{cache:'no-store'});
     if(!res.ok)throw new Error('flowers.json '+res.status);
     const data=await res.json();
     if(Array.isArray(data.species)&&data.species.length){
       CATALOG.species=data.species;
-      applyCosmetics();draw();
+      refreshFlowerChoices();applyCosmetics();draw();
       if(window.renderGardenRewards)window.renderGardenRewards();
     }
   }catch(e){console.warn('GitHub flower catalog fallback',e)}
@@ -86,6 +88,7 @@ function loadMeta(){
   }catch(_){}
   if(m.week.key!==weekKey())m.week={key:weekKey(),days:[],bonus3:false,bonus7:false};
   if(!CATALOG.species.some(x=>x.id===m.active.species))m.active.species='calendula';
+  if(!CATALOG.scenes.some(x=>x.id===m.active.scene))m.active.scene='window';
   if(typeof m.active.planted!=='boolean')m.active.planted=true;
   m.schemaVersion=2;
   return m;
@@ -94,6 +97,8 @@ let meta=loadMeta(),total=+(localStorage.sun||0),running=false,start=0,wakeLock=
 
 function saveMeta(){localStorage.setItem(META_KEY,JSON.stringify(meta))}
 function catalogItem(type,id){return CATALOG[type].find(x=>x.id===id)||CATALOG[type][0]}
+function sceneBackground(id){const item=CATALOG.scenes.find(x=>x.id===id);return item?.image?'url("assets/backgrounds/'+item.image+'?v=20260928-3") center/cover no-repeat':'linear-gradient(135deg,#e9f1e8,#d3e7e2)'}
+function refreshFlowerChoices(){const select=q('#newSpecies');if(!select)return;const chosen=select.value||meta?.active?.species||'calendula';select.replaceChildren(...CATALOG.species.map(sp=>{const o=document.createElement('option');o.value=sp.id;o.textContent=sp.name+' · 무료';return o}));select.value=CATALOG.species.some(sp=>sp.id===chosen)?chosen:'calendula'}
 function activeSpecies(){return catalogItem('species',meta.active.species)}
 function growthTargetMs(){return activeSpecies().growthMinutes*MIN}
 function stageInfo(elapsedMinutes){
@@ -156,7 +161,7 @@ window.__flowerFallback=(id,key)=>flowerSVG(id,key);
 function renderPlantVisual(ratio,elapsedMinutes){
   const sp=activeSpecies(),st=stageInfo(elapsedMinutes);
   const image=sp.growthImages&&sp.growthImages[st.key];
-  plant.innerHTML=image?'<img class="growthStageImage" src="'+image+'" alt="'+sp.name+' '+st.name+'" draggable="false">':flowerSVG(sp.id,st.key);
+  plant.innerHTML=image?'<img class="growthStageImage" src="'+image+'?v=20260928-3" alt="'+sp.name+' '+st.name+'" draggable="false">':flowerSVG(sp.id,st.key);
   plant.classList.toggle('photo-growth',Boolean(image));
   plant.dataset.stage=st.key;
   plant.dataset.species=sp.id;
@@ -168,6 +173,7 @@ function applyCosmetics(){
   plant.dataset.species=sp.id;
   plant.dataset.pot=meta.active.pot;
   room.dataset.scene=meta.active.scene;
+  if(!room.classList.contains('has-photo'))room.style.background=sceneBackground(meta.active.scene);
   activePlantName.textContent=meta.active.planted
     ?sp.icon+' '+sp.name+' · '+sp.difficulty+' · '+sp.growthMinutes+'분'
     :'씨앗을 선택해 심어주세요';
@@ -214,7 +220,7 @@ function draw(){
   plant.style.transform='translateX(-50%) scale('+(1+ratio*.2)+')';
   bar.style.width=(ratio*100)+'%';
   if(!meta.active.planted){
-    next.textContent='상점에서 씨앗을 구매하고 심어주세요.';
+    next.textContent='상점에서 원하는 꽃을 무료로 선택해 주세요.';
     harvest.hidden=true;rest.disabled=true;
   }else if(ratio>=1){
     next.textContent='꽃이 활짝 폈어요. 수확하면 햇살 포인트를 받아요.';
@@ -348,14 +354,14 @@ live();setInterval(live,30000);document.addEventListener('visibilitychange',()=>
 })();
 ;(()=>{const home=q('#homeSheet'),add=q('#addSheet'),list=q('#plantList'),photo=q('#photo'),virtual=q('#virtualChoices'),name=q('#newName'),place=q('#newPlace'),live=q('#newLive');let imageMode='mine',virtualId='',pendingImage='';let plants=[];try{plants=JSON.parse(localStorage.myPlants||'[]')}catch(_){}
 function compressImage(file,cb){let r=new FileReader;r.onload=()=>{let im=new Image;im.onload=()=>{let max=1400,s=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);c.getContext('2d').drawImage(im,0,0,c.width,c.height);let out=c.toDataURL('image/jpeg',.78);cb(out)};im.src=r.result};r.readAsDataURL(file)}
-function bgFor(v){return v==='desk'?'linear-gradient(135deg,#d9cbb8,#f4eee4)':v==='balcony'?'linear-gradient(135deg,#b9d4b1,#e8f0df)':'linear-gradient(135deg,#f6d99a,#d8e8e7)'}
-function render(){list.innerHTML=plants.length?'':'<p style="color:#788078">아직 등록한 식물이 없습니다. 거실 창가나 공부방 책상 위의 식물을 추가해 보세요.</p>';plants.forEach((p,i)=>{let d=document.createElement('div');d.className='plantItem';let bg=p.image?'url('+p.image+')':bgFor(p.virtual);d.innerHTML='<div class="plantThumb" style="background:'+bg+'">🪴</div><div><strong>'+p.name+'</strong><small>'+p.place+' · '+(p.live?'LIVE':'고정 환경')+'</small></div><button>보기</button>';let hold=null,sx=0,sy=0,held=false;const cancel=()=>{if(hold){clearTimeout(hold);hold=null}};d.addEventListener('pointerdown',e=>{if(e.target.closest('button'))return;sx=e.clientX;sy=e.clientY;held=false;cancel();hold=setTimeout(()=>{hold=null;held=true;if(navigator.vibrate)navigator.vibrate(35);if(confirm('「'+p.name+'」을(를) 내 정원에서 삭제할까요?')){plants.splice(i,1);try{localStorage.myPlants=JSON.stringify(plants)}catch(_){}render()}},700)});d.addEventListener('pointermove',e=>{if(hold&&Math.hypot(e.clientX-sx,e.clientY-sy)>12)cancel()});['pointerup','pointercancel','pointerleave'].forEach(t=>d.addEventListener(t,cancel));d.addEventListener('contextmenu',e=>{e.preventDefault()});d.querySelector('button').onclick=()=>{if(held)return;if(p.image){const rp=q('#roomPhoto');rp.onload=()=>{room.classList.add('has-photo');room.style.backgroundImage='none';room.style.background='';};rp.onerror=()=>alert('저장된 이미지를 불러오지 못했습니다. 내 정원에서 이미지를 다시 선택해 주세요.');rp.src=p.image;room.classList.add('has-photo');room.style.backgroundImage='none';room.style.background='';}else{q('#roomPhoto').removeAttribute('src');room.classList.remove('has-photo');room.style.background=bgFor(p.virtual)};room.dataset.live=p.live?'1':'0';home.classList.remove('open')};list.appendChild(d)})}
-q('#myHome').onclick=()=>{render();home.classList.add('open')};q('#homeClose').onclick=()=>home.classList.remove('open');q('#addPlant').onclick=()=>{home.classList.remove('open');add.classList.add('open')};q('#addClose').onclick=()=>add.classList.remove('open');
+function bgFor(v){return sceneBackground(v)}
+function render(){list.innerHTML=plants.length?'':'<p style="color:#788078">아직 등록한 식물이 없습니다. 거실 창가나 공부방 책상 위의 식물을 추가해 보세요.</p>';plants.forEach((p,i)=>{let d=document.createElement('div');d.className='plantItem';let bg=p.image?'url('+p.image+')':bgFor(p.virtual);d.innerHTML='<div class="plantThumb" style="background:'+bg+'">🪴</div><div><strong>'+p.name+'</strong><small>'+p.place+' · '+(p.live?'LIVE':'고정 환경')+'</small></div><button>보기</button>';let hold=null,sx=0,sy=0,held=false;const cancel=()=>{if(hold){clearTimeout(hold);hold=null}};d.addEventListener('pointerdown',e=>{if(e.target.closest('button'))return;sx=e.clientX;sy=e.clientY;held=false;cancel();hold=setTimeout(()=>{hold=null;held=true;if(navigator.vibrate)navigator.vibrate(35);if(confirm('「'+p.name+'」을(를) 내 정원에서 삭제할까요?')){plants.splice(i,1);try{localStorage.myPlants=JSON.stringify(plants)}catch(_){}render()}},700)});d.addEventListener('pointermove',e=>{if(hold&&Math.hypot(e.clientX-sx,e.clientY-sy)>12)cancel()});['pointerup','pointercancel','pointerleave'].forEach(t=>d.addEventListener(t,cancel));d.addEventListener('contextmenu',e=>{e.preventDefault()});d.querySelector('button').onclick=()=>{if(held)return;if(p.image){const rp=q('#roomPhoto');rp.onload=()=>{room.classList.add('has-photo');room.style.backgroundImage='none';room.style.background='';};rp.onerror=()=>alert('저장된 이미지를 불러오지 못했습니다. 내 정원에서 이미지를 다시 선택해 주세요.');rp.src=p.image;room.classList.add('has-photo');room.style.backgroundImage='none';room.style.background='';}else{q('#roomPhoto').removeAttribute('src');room.classList.remove('has-photo');localStorage.removeItem('room');room.style.background=bgFor(p.virtual);meta.active.scene=p.virtual||'window';saveMeta()};room.dataset.live=p.live?'1':'0';if(p.species&&p.species!==meta.active.species){meta.active.species=p.species;meta.active.planted=true;total=0;localStorage.sun=0;saveMeta();applyCosmetics();draw()}home.classList.remove('open')};list.appendChild(d)})}
+q('#myHome').onclick=()=>{render();home.classList.add('open')};q('#homeClose').onclick=()=>home.classList.remove('open');q('#addPlant').onclick=()=>{refreshFlowerChoices();home.classList.remove('open');add.classList.add('open')};q('#addClose').onclick=()=>add.classList.remove('open');
 q('#useMine').onclick=()=>{imageMode='mine';q('#useMine').classList.add('on');q('#useVirtual').classList.remove('on');virtual.classList.remove('show');photo.click()};
 q('#useVirtual').onclick=()=>{imageMode='virtual';q('#useVirtual').classList.add('on');q('#useMine').classList.remove('on');virtual.classList.add('show')};
 photo.addEventListener('change',e=>{let f=e.target.files[0];if(!f)return;compressImage(f,out=>{pendingImage=out})});
 virtual.querySelectorAll('button').forEach(b=>b.onclick=()=>{virtualId=b.dataset.v;virtual.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b))});
-q('#savePlant').onclick=()=>{if(!name.value.trim()||!place.value.trim())return alert('식물 이름과 장소를 입력해 주세요.');if(imageMode==='mine'&&!pendingImage)return alert('내 이미지를 선택해 주세요.');if(imageMode==='virtual'&&!virtualId)return alert('가상 이미지를 선택해 주세요.');const added={name:name.value.trim(),place:place.value.trim(),live:live.checked,image:imageMode==='mine'?pendingImage:'',virtual:imageMode==='virtual'?virtualId:''};plants.push(added);try{localStorage.myPlants=JSON.stringify(plants)}catch(_){plants.pop();alert('저장 공간이 부족합니다. 사진을 더 압축해 다시 시도해 주세요.');return}if(added.image){const rp=q('#roomPhoto');rp.src=added.image;room.classList.add('has-photo');room.style.backgroundImage='none';room.style.background='';}else{q('#roomPhoto').removeAttribute('src');room.classList.remove('has-photo');room.style.background=bgFor(added.virtual)};room.dataset.live=added.live?'1':'0';name.value='';place.value='';pendingImage='';virtualId='';add.classList.remove('open');render();home.classList.remove('open')};
+q('#savePlant').onclick=()=>{if(!name.value.trim()||!place.value.trim())return alert('식물 이름과 장소를 입력해 주세요.');if(imageMode==='mine'&&!pendingImage)return alert('내 이미지를 선택해 주세요.');if(imageMode==='virtual'&&!virtualId)return alert('가상 이미지를 선택해 주세요.');const added={name:name.value.trim(),place:place.value.trim(),species:q('#newSpecies').value||'calendula',live:live.checked,image:imageMode==='mine'?pendingImage:'',virtual:imageMode==='virtual'?virtualId:''};plants.push(added);try{localStorage.myPlants=JSON.stringify(plants)}catch(_){plants.pop();alert('저장 공간이 부족합니다. 사진을 더 압축해 다시 시도해 주세요.');return}if(added.image){const rp=q('#roomPhoto');rp.src=added.image;room.classList.add('has-photo');room.style.backgroundImage='none';room.style.background='';}else{q('#roomPhoto').removeAttribute('src');room.classList.remove('has-photo');localStorage.removeItem('room');room.style.background=bgFor(added.virtual)};room.dataset.live=added.live?'1':'0';meta.active.species=added.species;meta.active.planted=true;meta.active.scene=added.virtual||meta.active.scene;total=0;localStorage.sun=0;saveMeta();applyCosmetics();draw();name.value='';place.value='';pendingImage='';virtualId='';add.classList.remove('open');render();home.classList.remove('open')};
 render()})();
 ;(()=>{['click','dblclick','contextmenu'].forEach(t=>{plant.addEventListener(t,e=>{if(!room.classList.contains('editing')){e.preventDefault();e.stopPropagation()}},true);roomPhoto.addEventListener(t,e=>{if(!room.classList.contains('editing')){e.preventDefault();e.stopPropagation()}},true)});})();
 ;(()=>{['click','dblclick','contextmenu'].forEach(t=>{plant.addEventListener(t,e=>{if(!room.classList.contains('editing')){e.preventDefault();e.stopPropagation()}},true);roomPhoto.addEventListener(t,e=>{if(!room.classList.contains('editing')){e.preventDefault();e.stopPropagation()}},true)});})();
@@ -379,49 +385,41 @@ render()})();
   }
   function buySeed(id){
     const sp=catalogItem('species',id);
-    if(meta.points<sp.seedPrice){showReward('햇살 포인트가 부족해요');return}
-    meta.points-=sp.seedPrice;
     meta.seedCounts[id]=(meta.seedCounts[id]||0)+1;
     saveMeta();refreshMetaSummary();renderShop();
-    showReward(sp.name+' 씨앗 1개 구매');
+    showReward(sp.name+' 씨앗을 무료로 받았어요');
   }
   function plantSeed(id){
     if(running){showReward('햇살 휴식을 먼저 종료해 주세요');return}
-    if(meta.active.planted){showReward('현재 꽃을 먼저 완성해 주세요');return}
+    if(meta.active.planted&&meta.active.species===id)return;
     if(total>0){total=0;localStorage.sun=0}
-    if((meta.seedCounts[id]||0)<1){showReward('먼저 씨앗을 구매해 주세요');return}
-    meta.seedCounts[id]-=1;
     meta.active.species=id;
     meta.active.planted=true;
     total=0;localStorage.sun=0;
     saveMeta();applyCosmetics();renderShop();draw();
-    showReward(catalogItem('species',id).name+' 씨앗을 심었어요');
+    showReward(catalogItem('species',id).name+'을(를) 선택했어요');
   }
   function buyOrUse(type,item){
     const invKey=type==='pots'?'pots':'scenes';
     const activeKey=type==='pots'?'pot':'scene';
     const has=meta.inventory[invKey].includes(item.id);
-    if(!has){
-      if(item.milestone){showReward(item.milestone==='week3'?'이번 주 3일 휴식 달성 시 해금':'조건을 달성하면 해금됩니다');return}
-      if(meta.points<(item.price||0)){showReward('햇살 포인트가 부족해요');return}
-      meta.points-=item.price||0;meta.inventory[invKey].push(item.id);showReward(item.name+' 해금');
-    }
+    if(!has)meta.inventory[invKey].push(item.id);
     meta.active[activeKey]=item.id;saveMeta();applyCosmetics();refreshMetaSummary();renderShop();
-    if(type==='scenes'&&!room.classList.contains('has-photo'))room.style.background='';
+    if(type==='scenes'){roomPhoto.removeAttribute('src');room.classList.remove('has-photo');localStorage.removeItem('room');room.style.background=sceneBackground(item.id)}
   }
   function renderSeedShop(){
     return '<section class="shopGroup"><h3>9월 꽃 씨앗</h3><p class="seedNote">씨앗 → 발아 → 새싹 → 본잎 → 봉오리 → 개화 순서로 자랍니다. 앱의 성장시간은 휴식 습관용으로 실제 생육기간을 압축한 시간입니다.</p>'+
       CATALOG.species.map(sp=>{
         const count=meta.seedCounts[sp.id]||0,active=meta.active.planted&&meta.active.species===sp.id;
-        return '<article class="seedShopItem '+(active?'active':'')+'"><div class="seedPreview">'+flowerSVG(sp.id,'seed')+'</div><div class="seedInfo"><strong>'+sp.name+'</strong><small>'+sp.season+' · '+sp.difficulty+' · 개화 '+sp.growthMinutes+'분</small><em>보유 씨앗 '+count+'개 · 완성 보상 '+sp.reward+'P</em></div><div class="seedActions"><button data-buy-seed="'+sp.id+'">'+sp.seedPrice+'P 구매</button><button data-plant-seed="'+sp.id+'" '+(count<1||meta.active.planted?'disabled':'')+'>심기</button></div></article>'
+        return '<article class="seedShopItem '+(active?'active':'')+'"><div class="seedPreview">'+flowerSVG(sp.id,'seed')+'</div><div class="seedInfo"><strong>'+sp.name+'</strong><small>'+sp.season+' · '+sp.difficulty+' · 개화 '+sp.growthMinutes+'분</small><em>무료 제공 · 완성 보상 '+sp.reward+'P</em></div><div class="seedActions"><button data-plant-seed="'+sp.id+'">'+(active?'현재 꽃':'무료로 선택')+'</button></div></article>'
       }).join('')+'</section>';
   }
   function renderShopGroup(title,type,items){
     const invKey=type==='pots'?'pots':'scenes',activeKey=type==='pots'?'pot':'scene';
     return '<section class="shopGroup"><h3>'+title+'</h3>'+items.map(item=>{
       const has=meta.inventory[invKey].includes(item.id),active=meta.active[activeKey]===item.id;
-      let label=active?'사용 중':has?'사용하기':item.milestone?'조건 해금':(item.price+'P');
-      return '<button class="shopItem '+(active?'active':'')+'" data-shop-type="'+type+'" data-shop-id="'+item.id+'"><span>'+item.icon+'</span><div><strong>'+item.name+'</strong><small>'+(has?'보유 중':(item.milestone==='week3'?'이번 주 3일 휴식 달성':(item.price+'P로 해금')))+'</small></div><b>'+label+'</b></button>'
+      let label=active?'사용 중':'무료로 선택';
+      return '<button class="shopItem '+(active?'active':'')+'" data-shop-type="'+type+'" data-shop-id="'+item.id+'"><span>'+item.icon+'</span><div><strong>'+item.name+'</strong><small>무료 제공</small></div><b>'+label+'</b></button>'
     }).join('')+'</section>';
   }
   function renderShop(){
@@ -446,5 +444,5 @@ render()})();
     q('#myHome').click();
     const btn=document.querySelector('[data-garden-tab="codex"]');btn&&btn.click();
   };
-  renderGardenRewards();
+  renderGardenRewards();refreshFlowerChoices();
 })();;
