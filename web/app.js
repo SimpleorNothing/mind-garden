@@ -311,57 +311,75 @@ render()})();
 ;(()=>{['click','dblclick','contextmenu'].forEach(t=>{plant.addEventListener(t,e=>{if(!room.classList.contains('editing')){e.preventDefault();e.stopPropagation()}},true);roomPhoto.addEventListener(t,e=>{if(!room.classList.contains('editing')){e.preventDefault();e.stopPropagation()}},true)});})();
 
 ;(()=>{ 
-  const collection=q('#collectionList'),codex=q('#codexList'),shop=q('#shopList'),home=q('#homeSheet');
-  function owned(type,id){
-    const key=type==='species'?'species':type==='pots'?'pots':'scenes';
-    return meta.inventory[key].includes(id);
-  }
-  function requirementText(item){
-    if(item.milestone==='week3')return '이번 주 3일 휴식 달성 시 해금';
-    if(item.milestone==='week7')return '이번 주 7일 휴식 달성 시 해금';
-    return '';
-  }
+  const collection=q('#collectionList'),codex=q('#codexList'),shop=q('#shopList');
   function renderCollection(){
     if(!collection)return;
-    if(!meta.collection.length){collection.innerHTML='<p class="emptyState">아직 완성한 식물이 없습니다. 60분의 햇살 휴식을 채워 첫 식물을 완성해 보세요.</p>';return}
+    if(!meta.collection.length){collection.innerHTML='<p class="emptyState">아직 완성한 꽃이 없습니다. 씨앗을 심고 햇살 휴식으로 꽃을 피워보세요.</p>';return}
     collection.innerHTML=meta.collection.map(x=>{
       const sp=catalogItem('species',x.species),d=new Date(x.completedAt);
-      return '<article class="collectionCard"><div class="collectionIcon">'+sp.icon+'</div><div><strong>'+sp.name+'</strong><small>'+d.toLocaleDateString('ko-KR')+' 완성 · 공개 안 함</small></div><span>완성</span></article>'
+      return '<article class="collectionCard"><div class="collectionIcon">'+sp.icon+'</div><div><strong>'+sp.name+'</strong><small>'+d.toLocaleDateString('ko-KR')+' 개화 · '+(x.focusMinutes||sp.growthMinutes)+'분 · 공개 안 함</small></div><span>완성</span></article>'
     }).join('');
   }
   function renderCodex(){
     if(!codex)return;
     codex.innerHTML=CATALOG.species.map(sp=>{
-      const count=meta.codex[sp.id]||0,has=meta.inventory.species.includes(sp.id);
-      return '<article class="codexCard '+(has?'':'locked')+'"><div class="codexIcon">'+(has?sp.icon:'?')+'</div><div><strong>'+(has?sp.name:'미발견 식물')+'</strong><small>'+(has?('완성 '+count+'회'):(requirementText(sp)||'상점에서 해금'))+'</small></div><b>'+count+'/3</b></article>'
+      const count=meta.codex[sp.id]||0;
+      return '<article class="codexCard"><div class="codexIcon">'+sp.icon+'</div><div><strong>'+sp.name+'</strong><small>'+sp.season+' · '+sp.difficulty+' · '+sp.growthMinutes+'분 · 완성 '+count+'회</small></div><b>'+count+'/3</b></article>'
     }).join('');
   }
+  function buySeed(id){
+    const sp=catalogItem('species',id);
+    if(meta.points<sp.seedPrice){showReward('햇살 포인트가 부족해요');return}
+    meta.points-=sp.seedPrice;
+    meta.seedCounts[id]=(meta.seedCounts[id]||0)+1;
+    saveMeta();refreshMetaSummary();renderShop();
+    showReward(sp.name+' 씨앗 1개 구매');
+  }
+  function plantSeed(id){
+    if(running){showReward('햇살 휴식을 먼저 종료해 주세요');return}
+    if(meta.active.planted||total>0){showReward('현재 꽃을 먼저 완성해 주세요');return}
+    if((meta.seedCounts[id]||0)<1){showReward('먼저 씨앗을 구매해 주세요');return}
+    meta.seedCounts[id]-=1;
+    meta.active.species=id;
+    meta.active.planted=true;
+    total=0;localStorage.sun=0;
+    saveMeta();applyCosmetics();renderShop();draw();
+    showReward(catalogItem('species',id).name+' 씨앗을 심었어요');
+  }
   function buyOrUse(type,item){
-    const invKey=type==='species'?'species':type==='pots'?'pots':'scenes';
-    const activeKey=type==='species'?'species':type==='pots'?'pot':'scene';
+    const invKey=type==='pots'?'pots':'scenes';
+    const activeKey=type==='pots'?'pot':'scene';
     const has=meta.inventory[invKey].includes(item.id);
     if(!has){
-      if(item.milestone){showReward(requirementText(item));return}
+      if(item.milestone){showReward(item.milestone==='week3'?'이번 주 3일 휴식 달성 시 해금':'조건을 달성하면 해금됩니다');return}
       if(meta.points<(item.price||0)){showReward('햇살 포인트가 부족해요');return}
-      meta.points-=item.price||0;meta.inventory[invKey].push(item.id);
-      showReward(item.name+' 해금');
+      meta.points-=item.price||0;meta.inventory[invKey].push(item.id);showReward(item.name+' 해금');
     }
     meta.active[activeKey]=item.id;saveMeta();applyCosmetics();refreshMetaSummary();renderShop();
     if(type==='scenes'&&!room.classList.contains('has-photo'))room.style.background='';
   }
+  function renderSeedShop(){
+    return '<section class="shopGroup"><h3>9월 꽃 씨앗</h3><p class="seedNote">씨앗 → 발아 → 새싹 → 본잎 → 봉오리 → 개화 순서로 자랍니다. 앱의 성장시간은 휴식 습관용으로 실제 생육기간을 압축한 시간입니다.</p>'+
+      CATALOG.species.map(sp=>{
+        const count=meta.seedCounts[sp.id]||0,active=meta.active.planted&&meta.active.species===sp.id;
+        return '<article class="seedShopItem '+(active?'active':'')+'"><div class="seedPreview">'+flowerSVG(sp.id,'seed')+'</div><div class="seedInfo"><strong>'+sp.name+'</strong><small>'+sp.season+' · '+sp.difficulty+' · 개화 '+sp.growthMinutes+'분</small><em>보유 씨앗 '+count+'개 · 완성 보상 '+sp.reward+'P</em></div><div class="seedActions"><button data-buy-seed="'+sp.id+'">'+sp.seedPrice+'P 구매</button><button data-plant-seed="'+sp.id+'" '+(count<1||meta.active.planted?'disabled':'')+'>심기</button></div></article>'
+      }).join('')+'</section>';
+  }
   function renderShopGroup(title,type,items){
-    const invKey=type==='species'?'species':type==='pots'?'pots':'scenes',activeKey=type==='species'?'species':type==='pots'?'pot':'scene';
+    const invKey=type==='pots'?'pots':'scenes',activeKey=type==='pots'?'pot':'scene';
     return '<section class="shopGroup"><h3>'+title+'</h3>'+items.map(item=>{
       const has=meta.inventory[invKey].includes(item.id),active=meta.active[activeKey]===item.id;
       let label=active?'사용 중':has?'사용하기':item.milestone?'조건 해금':(item.price+'P');
-      return '<button class="shopItem '+(active?'active':'')+'" data-shop-type="'+type+'" data-shop-id="'+item.id+'"><span>'+item.icon+'</span><div><strong>'+item.name+'</strong><small>'+(has?'보유 중':(requirementText(item)||(item.price+'P로 해금')))+'</small></div><b>'+label+'</b></button>'
+      return '<button class="shopItem '+(active?'active':'')+'" data-shop-type="'+type+'" data-shop-id="'+item.id+'"><span>'+item.icon+'</span><div><strong>'+item.name+'</strong><small>'+(has?'보유 중':(item.milestone==='week3'?'이번 주 3일 휴식 달성':(item.price+'P로 해금')))+'</small></div><b>'+label+'</b></button>'
     }).join('')+'</section>';
   }
   function renderShop(){
     if(!shop)return;
-    shop.innerHTML=renderShopGroup('식물 씨앗','species',CATALOG.species)+renderShopGroup('화분','pots',CATALOG.pots)+renderShopGroup('정원 배경','scenes',CATALOG.scenes);
+    shop.innerHTML=renderSeedShop()+renderShopGroup('화분','pots',CATALOG.pots)+renderShopGroup('정원 배경','scenes',CATALOG.scenes);
+    shop.querySelectorAll('[data-buy-seed]').forEach(b=>b.onclick=()=>buySeed(b.dataset.buySeed));
+    shop.querySelectorAll('[data-plant-seed]').forEach(b=>b.onclick=()=>plantSeed(b.dataset.plantSeed));
     shop.querySelectorAll('[data-shop-id]').forEach(b=>b.onclick=()=>{
-      const type=b.dataset.shopType,id=b.dataset.shopId,list=type==='species'?CATALOG.species:type==='pots'?CATALOG.pots:CATALOG.scenes;
+      const type=b.dataset.shopType,id=b.dataset.shopId,list=type==='pots'?CATALOG.pots:CATALOG.scenes;
       buyOrUse(type,list.find(x=>x.id===id));
     });
   }
@@ -378,4 +396,4 @@ render()})();
     const btn=document.querySelector('[data-garden-tab="codex"]');btn&&btn.click();
   };
   renderGardenRewards();
-})();
+})();;
