@@ -1,14 +1,13 @@
 const q=s=>document.querySelector(s),room=q('#room'),plant=q('#plant'),time=q('#time'),stage=q('#stage'),rest=q('#rest'),msg=q('#msg'),bar=q('#bar'),next=q('#next');
 const harvest=q('#harvest'),sunPoints=q('#sunPoints'),completedPlants=q('#completedPlants'),activePlantName=q('#activePlantName');
-const MIN=60000,GROWTH_TARGET=60*MIN,META_KEY='mindGardenMetaV1';
+const MIN=60000,META_KEY='mindGardenMetaV1';
 
 const CATALOG={
   species:[
-    {id:'monstera',name:'몬스테라',icon:'🌿',price:0},
-    {id:'rubber',name:'고무나무',icon:'🌱',price:60},
-    {id:'olive',name:'올리브나무',icon:'🫒',price:120},
-    {id:'fern',name:'보스턴고사리',icon:'🌿',price:160},
-    {id:'lavender',name:'라벤더',icon:'🪻',milestone:'week7'}
+    {id:'calendula',name:'금잔화',icon:'🟠',seedPrice:40,growthMinutes:90,reward:120,difficulty:'쉬움',season:'9월 추천'},
+    {id:'cornflower',name:'수레국화',icon:'🔵',seedPrice:60,growthMinutes:120,reward:150,difficulty:'보통',season:'9월 추천'},
+    {id:'pansy',name:'팬지',icon:'🟣',seedPrice:80,growthMinutes:150,reward:180,difficulty:'보통+',season:'9월~초10월'},
+    {id:'nigella',name:'니겔라',icon:'💠',seedPrice:100,growthMinutes:180,reward:220,difficulty:'어려움',season:'9월 추천'}
   ],
   pots:[
     {id:'ivory',name:'아이보리 화분',icon:'◯',price:0},
@@ -33,13 +32,14 @@ function weekKey(d=new Date()){
 }
 function defaultMeta(){
   return {
-    schemaVersion:1,
+    schemaVersion:2,
     points:0,
     completedCount:0,
     codex:{},
     collection:[],
-    inventory:{species:['monstera'],pots:['ivory'],scenes:['window']},
-    active:{species:'monstera',pot:'ivory',scene:'window'},
+    seedCounts:{calendula:0,cornflower:0,pansy:0,nigella:0},
+    inventory:{species:[],pots:['ivory'],scenes:['window']},
+    active:{species:'calendula',pot:'ivory',scene:'window',planted:true},
     dailyFocus:{},
     week:{key:weekKey(),days:[],bonus3:false,bonus7:false},
     lastDailyCompletionBonus:'',
@@ -53,6 +53,7 @@ function loadMeta(){
     if(saved&&typeof saved==='object'){
       m={...m,...saved};
       m.inventory={...m.inventory,...(saved.inventory||{})};
+      m.seedCounts={...m.seedCounts,...(saved.seedCounts||{})};
       m.active={...m.active,...(saved.active||{})};
       m.social={...m.social,...(saved.social||{})};
       m.codex=saved.codex||{};
@@ -62,6 +63,9 @@ function loadMeta(){
     }
   }catch(_){}
   if(m.week.key!==weekKey())m.week={key:weekKey(),days:[],bonus3:false,bonus7:false};
+  if(!CATALOG.species.some(x=>x.id===m.active.species))m.active.species='calendula';
+  if(typeof m.active.planted!=='boolean')m.active.planted=true;
+  m.schemaVersion=2;
   return m;
 }
 let meta=loadMeta(),total=+(localStorage.sun||0),running=false,start=0,wakeLock=null;
