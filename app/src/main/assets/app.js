@@ -309,9 +309,9 @@ plantPlace();roomPlace()})();
   room.insertBefore(lights,q('#plantShadow'));
 })();
 ;(()=>{const light=q('#liveLight'),sun=q('#sun'),shadow=q('#plantShadow');const rise=6*60+18,set=18*60+24;
-function live(){if(room.dataset.live==='0'){room.classList.remove('live-night','live-dawn','live-day','live-evening');sun.style.opacity='0';shadow.style.opacity='0';return}const n=new Date(),m=n.getHours()*60+n.getMinutes(),day=m>=rise&&m<=set,p=Math.max(0,Math.min(1,(m-rise)/(set-rise))),noon=(rise+set)/2,side=Math.max(-1,Math.min(1,(m-noon)/((set-rise)/2)));
-room.classList.remove('live-night','live-dawn','live-day','live-evening');
-if(!day)room.classList.add('live-night');else if(p<.16)room.classList.add('live-dawn');else if(p>.82)room.classList.add('live-evening');else room.classList.add('live-day');
+function live(){if(room.dataset.live==='0'){room.classList.remove('live-night','live-twilight','live-dawn','live-day','live-evening');sun.style.opacity='0';shadow.style.opacity='0';return}const n=new Date(),m=n.getHours()*60+n.getMinutes(),day=m>=rise&&m<=set,p=Math.max(0,Math.min(1,(m-rise)/(set-rise))),noon=(rise+set)/2,side=Math.max(-1,Math.min(1,(m-noon)/((set-rise)/2)));
+room.classList.remove('live-night','live-twilight','live-dawn','live-day','live-evening');
+if(!day){room.classList.add('live-night');if(m>set&&m<20*60)room.classList.add('live-twilight')}else if(p<.16)room.classList.add('live-dawn');else if(p>.82)room.classList.add('live-evening');else room.classList.add('live-day');
 if(day){sun.style.left=(7+86*p)+'%';sun.style.right='auto';sun.style.top=(38-27*Math.sin(Math.PI*p))+'px';sun.style.opacity='1';sun.style.filter='brightness('+(1+.18*Math.sin(Math.PI*p))+')';}
 const pr=plant.getBoundingClientRect(),rr=room.getBoundingClientRect(),cx=pr.left-rr.left+pr.width/2,cy=pr.bottom-rr.top-8;
 shadow.style.left=cx+'px';shadow.style.top=cy+'px';shadow.style.opacity=day?String(.18+.22*Math.abs(side)):'0';shadow.style.width=(55+105*Math.abs(side))+'px';shadow.style.transform='rotate('+(90+62*side)+'deg)';
