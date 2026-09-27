@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Mind Garden · 생장 이미지 테스트</title>
+<title>Mind Garden · 이미지 테스트</title>
 <style>
 :root{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#243328;background:#f4f1e8}
 *{box-sizing:border-box}body{margin:0}.wrap{max-width:1180px;margin:auto;padding:24px 18px 56px}
@@ -23,13 +23,18 @@ select{font:inherit;padding:10px 36px 10px 12px;border:1px solid #d5d6cb;border-
 .dialog::backdrop{background:#0008}.dialog img{display:block;width:100%;max-height:76vh;object-fit:contain;background:#f5f2ea}
 .dialog footer{padding:12px 16px;display:flex;justify-content:space-between;align-items:center}.dialog button{border:0;background:#e9ede6;border-radius:10px;padding:9px 14px}
 @media(max-width:720px){header{align-items:flex-start;flex-direction:column}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.meta{padding:10px}.meta strong{font-size:15px}}
+.panel{margin-top:28px;background:#fff;padding:22px;border-radius:22px}.panel h2{margin:0 0 6px}.panel p{margin-bottom:16px}.scene{position:relative;max-width:580px;aspect-ratio:1;border-radius:20px;overflow:hidden;background:#1b2830}.scene img{width:100%;height:100%;object-fit:cover;display:block}.scene:after{content:'';position:absolute;inset:0;background:var(--overlay,transparent);pointer-events:none}.preview{display:flex;align-items:start;gap:24px;flex-wrap:wrap}.controls{flex:1;min-width:220px}.controls label,.controls strong{display:block;margin:12px 0}.controls input[type=range]{width:100%;accent-color:#496b51}.controls button,.upload{font:inherit;display:inline-block;padding:10px 12px;border:1px solid #cbd5ca;background:#eaf0e8;border-radius:11px;color:#283f30;cursor:pointer;margin:4px 4px 4px 0}.controls input[type=time]{font:inherit;padding:8px;border-radius:9px;border:1px solid #cbd5ca}.upload input{position:absolute;opacity:0;width:1px}.scene-card{border:1px solid #deddd3;border-radius:18px;background:white;overflow:hidden;text-align:left;padding:0;cursor:pointer;font:inherit;color:inherit}.scene-card img{display:block;width:100%;aspect-ratio:1;object-fit:cover}.scene-card strong{display:block;padding:12px}.hint{font-size:14px;margin-top:14px}nav{display:flex;gap:8px;flex-wrap:wrap}nav a{color:#365c40;text-decoration:none;background:#fff;padding:8px 10px;border-radius:10px}
 </style>
 </head>
 <body>
 <main class="wrap">
-<header><div><div class="tag">MIND GARDEN · TEST WEB</div><h1>생장단계 이미지 확인</h1><p>운영 화면과 분리된 이미지 검수용 페이지입니다.</p></div><select id="species" aria-label="꽃 선택"></select></header>
+<header><div><div class="tag">MIND GARDEN · TEST WEB</div><h1>이미지 테스트</h1><p>식물 생장 · 내 환경 시간 변화 · 가상 이미지를 확인합니다.</p></div><nav><a href="#growth">식물별 생장</a><a href="#environment">내 환경</a><a href="#virtual">가상 이미지</a></nav></header>
+<section id="growth"><h2>1. 식물별 생장 이미지</h2><select id="species" aria-label="꽃 선택"></select>
 <div class="notice" id="notice">꽃 데이터를 불러오는 중입니다.</div>
 <section class="grid" id="grid" aria-live="polite"></section>
+</section>
+<section class="panel" id="environment"><h2>2. 내 환경 이미지 · 시간대별 변화</h2><p>내 사진 또는 아래 가상 배경을 선택하고 시간을 바꿔 보세요.</p><div class="preview"><div class="scene" id="scene"><img id="sceneImage" alt="환경 이미지 미리보기"></div><div class="controls"><label class="upload">내 이미지 선택<input id="photo" type="file" accept="image/*"></label><strong id="sceneName">가상 배경을 불러오는 중</strong><label>시간 <input id="clock" type="time" value="12:00"></label><input id="slider" type="range" min="0" max="1439" value="720" aria-label="시간 조절"><div><button data-time="06:00">아침 6시</button><button data-time="12:00">낮 12시</button><button data-time="18:00">저녁 6시</button><button data-time="23:00">밤 11시</button></div><button id="now">현재 시간</button><strong id="phase">낮</strong><p class="hint">시간에 따른 조명과 색조 미리보기입니다. 창문이나 건물 불빛은 새로 그리지 않습니다. 내 사진은 서버에 전송되지 않습니다.</p></div></div></section>
+<section class="panel" id="virtual"><h2>3. 가상 이미지</h2><p>앱의 ‘가상의 이미지’에 등록된 배경입니다. 선택하면 위 미리보기에 반영됩니다.</p><div class="grid" id="virtualGrid"></div></section>
 </main>
 <dialog class="dialog" id="viewer"><img id="large" alt=""><footer><strong id="caption"></strong><button id="close">닫기</button></footer></dialog>
 <script>
@@ -71,5 +76,11 @@ fetch('../data/flowers.json?test=1',{cache:'no-store'}).then(r=>{if(!r.ok)throw 
 }).catch(e=>{notice.textContent='flowers.json을 불러오지 못했습니다: '+e.message;grid.innerHTML='<div class="empty">데이터 로드 실패</div>'});
 document.querySelector('#close').onclick=()=>viewer.close();
 viewer.onclick=e=>{if(e.target===viewer)viewer.close()};
+const scene=document.querySelector('#scene'),sceneImage=document.querySelector('#sceneImage');
+function setScene(src,name){if(sceneImage.dataset.objectUrl){URL.revokeObjectURL(sceneImage.dataset.objectUrl);delete sceneImage.dataset.objectUrl}sceneImage.src=src;sceneImage.alt=name+' 시간별 미리보기';document.querySelector('#sceneName').textContent=name}
+fetch('../data/backgrounds.json',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error(r.status);return r.json()}).then(data=>{const list=data.backgrounds||[],container=document.querySelector('#virtualGrid');container.replaceChildren(...list.map(bg=>{const button=document.createElement('button'),img=document.createElement('img'),label=document.createElement('strong');button.className='scene-card';img.src='../'+bg.image;img.alt=bg.name;label.textContent=bg.name;button.append(img,label);button.onclick=()=>{setScene(img.src,bg.name);location.hash='environment'};return button}));if(list[0])setScene('../'+list[0].image,list[0].name)}).catch(()=>document.querySelector('#virtualGrid').textContent='가상 이미지를 불러오지 못했습니다.');
+document.querySelector('#photo').onchange=e=>{const file=e.target.files?.[0];if(!file)return;setScene(URL.createObjectURL(file),file.name);sceneImage.dataset.objectUrl=sceneImage.src};
+function setTime(minute){const m=Math.max(0,Math.min(1439,Number(minute))),hour=Math.floor(m/60),stamp=String(hour).padStart(2,'0')+':'+String(m%60).padStart(2,'0');document.querySelector('#clock').value=stamp;document.querySelector('#slider').value=m;let phase,filter,overlay;if(hour<5||hour>=20){phase='밤';filter='brightness(.3) saturate(.7) contrast(1.1)';overlay='linear-gradient(135deg,#0a17355c,#08102255)'}else if(hour<8){phase='아침';filter='brightness(.78) sepia(.13)';overlay='linear-gradient(135deg,#f4a76230,transparent 65%)'}else if(hour>=17){phase='저녁';filter='brightness(.64) sepia(.18)';overlay='linear-gradient(135deg,#b75b342b,#0a173544)'}else{phase='낮';filter='none';overlay='transparent'}sceneImage.style.filter=filter;scene.style.setProperty('--overlay',overlay);document.querySelector('#phase').textContent=phase+' · '+stamp}
+document.querySelector('#clock').oninput=e=>{const [h,m]=e.target.value.split(':').map(Number);setTime(h*60+m)};document.querySelector('#slider').oninput=e=>setTime(e.target.value);document.querySelectorAll('[data-time]').forEach(b=>b.onclick=()=>{const [h,m]=b.dataset.time.split(':').map(Number);setTime(h*60+m)});document.querySelector('#now').onclick=()=>{const n=new Date;setTime(n.getHours()*60+n.getMinutes())};document.querySelector('#now').click();
 </script>
 </body></html>
