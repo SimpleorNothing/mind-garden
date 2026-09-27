@@ -129,3 +129,10 @@
 #room.live-night.live-twilight #plant:not(.photo-growth) svg{filter:brightness(.82) saturate(.9)}
 
 .field select{display:block;width:100%;margin-top:6px;padding:12px;border:1px solid #dce2d8;border-radius:14px;background:#fff;font:inherit}
+
+/* Virtual backgrounds use weather alone: no clock tint, sun or cast shadow. */
+#room:not(.has-photo) #plantShadow,#room:not(.has-photo) #sun{display:none!important}
+#room:not(.has-photo) #liveLight{background:none!important}
+#room:not(.has-photo).weather-cloudy #liveLight{background:rgba(134,147,159,.13)!important}
+#room:not(.has-photo).weather-rain #liveLight{background:linear-gradient(180deg,rgba(68,91,121,.26),rgba(76,99,130,.12))!important}
+#room:not(.has-photo).weather-snow #liveLight{background:rgba(227,237,244,.20)!important}
