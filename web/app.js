@@ -166,8 +166,8 @@ function unlockWeeklyRewards(){
   }
   if(n>=7&&!meta.week.bonus7){
     meta.week.bonus7=true;
-    if(!meta.inventory.species.includes('lavender'))meta.inventory.species.push('lavender');
-    showReward('이번 주 7일 달성 · 라벤더 씨앗 해금');
+    meta.seedCounts.pansy=(meta.seedCounts.pansy||0)+1;
+    showReward('이번 주 7일 달성 · 팬지 씨앗 1개 선물');
   }
 }
 function recordFocus(ms){
@@ -180,18 +180,21 @@ function recordFocus(ms){
   saveMeta();
 }
 function draw(){
-  let t=total+(running?Date.now()-start:0),m=Math.floor(t/MIN),s=Math.floor(t/1000)%60;
-  time.textContent=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
-  let data=m>=60?['완성',60]:m>=30?['화분',60]:m>=10?['잎',30]:['새싹',10];
-  stage.textContent=data[0];
-  plant.style.transform='translateX(-50%) scale('+(1+Math.min(m,60)/300)+')';
-  bar.style.width=Math.min(100,m/60*100)+'%';
-  if(m>=60){
-    next.textContent='완성됐어요. 수확하면 햇살 포인트를 받아요.';
-    harvest.hidden=false;
+  let t=total+(running?Date.now()-start:0),m=Math.floor(t/MIN),sec=Math.floor(t/1000)%60;
+  const target=activeSpecies().growthMinutes,ratio=meta.active.planted?Math.min(1,t/(target*MIN)):0;
+  time.textContent=String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');
+  renderPlantVisual(ratio);
+  plant.style.transform='translateX(-50%) scale('+(1+ratio*.2)+')';
+  bar.style.width=(ratio*100)+'%';
+  if(!meta.active.planted){
+    next.textContent='상점에서 씨앗을 구매하고 심어주세요.';
+    harvest.hidden=true;rest.disabled=true;
+  }else if(ratio>=1){
+    next.textContent='꽃이 활짝 폈어요. 수확하면 햇살 포인트를 받아요.';
+    harvest.hidden=false;rest.disabled=true;
   }else{
-    next.textContent='완성까지 '+(60-m)+'분';
-    harvest.hidden=true;
+    next.textContent='개화까지 '+Math.max(0,target-m)+'분 · '+activeSpecies().difficulty;
+    harvest.hidden=true;rest.disabled=false;
   }
 }
 setInterval(draw,1000);draw();
@@ -206,7 +209,8 @@ async function setScreenAwake(on){
   }catch(_){wakeLock=null}
 }
 function startRest(){
-  if(running||total>=GROWTH_TARGET)return;
+  if(!meta.active.planted){showReward('먼저 꽃 씨앗을 심어주세요');return}
+  if(running||total>=growthTargetMs())return;
   running=true;start=Date.now();rest.textContent='휴식 종료';room.classList.add('active');
   msg.textContent='광합성 중이에요. 화면은 켜진 상태로 유지됩니다.';
   setScreenAwake(true);draw();
@@ -221,9 +225,10 @@ function stopRest(reason='manual'){
 }
 function harvestPlant(){
   if(running)stopRest('manual');
-  if(total<GROWTH_TARGET)return;
-  const sp=activeSpecies(),today=localDateKey();
-  let reward=100;
+  const sp=activeSpecies();
+  if(total<growthTargetMs())return;
+  const today=localDateKey();
+  let reward=sp.reward;
   if(meta.lastDailyCompletionBonus!==today){reward+=20;meta.lastDailyCompletionBonus=today}
   meta.points+=reward;meta.completedCount+=1;
   meta.codex[sp.id]=(meta.codex[sp.id]||0)+1;
@@ -232,11 +237,12 @@ function harvestPlant(){
     species:sp.id,
     speciesName:sp.name,
     completedAt:new Date().toISOString(),
-    focusMinutes:60,
+    focusMinutes:sp.growthMinutes,
     visibility:'private',
     shareId:null
   });
-  total=Math.max(0,total-GROWTH_TARGET);localStorage.sun=total;
+  total=0;localStorage.sun=0;
+  meta.active.planted=false;
   saveMeta();refreshMetaSummary();applyCosmetics();renderGardenRewards();
   showReward(sp.name+' 완성 · +'+reward+'P');
   msg.textContent=reward>100?'오늘 첫 완성 보너스까지 받았어요.':'완성한 식물이 내 정원에 보관됐어요.';
