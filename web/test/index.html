@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mind Garden · 생장 이미지 테스트</title>
+<style>
+:root{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#243328;background:#f4f1e8}
+*{box-sizing:border-box}body{margin:0}.wrap{max-width:1180px;margin:auto;padding:24px 18px 56px}
+header{display:flex;gap:16px;align-items:end;justify-content:space-between;margin-bottom:20px}
+h1{font-size:clamp(24px,5vw,38px);margin:4px 0}p{margin:0;color:#667269}.tag{font-size:12px;letter-spacing:.12em;color:#758176}
+select{font:inherit;padding:10px 36px 10px 12px;border:1px solid #d5d6cb;border-radius:12px;background:#fff}
+.notice{padding:12px 14px;border-radius:12px;background:#fff;border:1px solid #e2e0d7;margin:14px 0 20px}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.card{border:1px solid #deddd3;border-radius:20px;background:#fff;overflow:hidden;box-shadow:0 8px 24px #2635260b;cursor:pointer;text-align:left;padding:0}
+.card:focus,.card:hover{outline:2px solid #87977f;outline-offset:2px}
+.image{aspect-ratio:1/1;background:#f7f4ec;display:grid;place-items:center;overflow:hidden}
+.image img{width:100%;height:100%;object-fit:cover;display:block}
+.meta{padding:13px 14px 15px}.meta strong{font-size:17px}.meta span{float:right;color:#778178;font-size:13px}
+.meta small{display:block;margin-top:5px;color:#777}
+.empty{min-height:360px;display:grid;place-items:center;border:1px dashed #c8c9c0;border-radius:18px;color:#777;background:#faf9f4}
+.dialog{border:0;border-radius:22px;padding:0;max-width:min(92vw,820px);background:#fff;box-shadow:0 24px 80px #0005}
+.dialog::backdrop{background:#0008}.dialog img{display:block;width:100%;max-height:76vh;object-fit:contain;background:#f5f2ea}
+.dialog footer{padding:12px 16px;display:flex;justify-content:space-between;align-items:center}.dialog button{border:0;background:#e9ede6;border-radius:10px;padding:9px 14px}
+@media(max-width:720px){header{align-items:flex-start;flex-direction:column}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.meta{padding:10px}.meta strong{font-size:15px}}
+</style>
+</head>
+<body>
+<main class="wrap">
+<header><div><div class="tag">MIND GARDEN · TEST WEB</div><h1>생장단계 이미지 확인</h1><p>운영 화면과 분리된 이미지 검수용 페이지입니다.</p></div><select id="species" aria-label="꽃 선택"></select></header>
+<div class="notice" id="notice">꽃 데이터를 불러오는 중입니다.</div>
+<section class="grid" id="grid" aria-live="polite"></section>
+</main>
+<dialog class="dialog" id="viewer"><img id="large" alt=""><footer><strong id="caption"></strong><button id="close">닫기</button></footer></dialog>
+<script>
+const stages=[
+  {key:'seed',name:'씨앗'},
+  {key:'germination',name:'발아'},
+  {key:'sprout',name:'새싹'},
+  {key:'leaves',name:'본잎'},
+  {key:'bud',name:'봉오리'},
+  {key:'bloom',name:'개화'}
+];
+const sel=document.querySelector('#species'),grid=document.querySelector('#grid'),notice=document.querySelector('#notice');
+const viewer=document.querySelector('#viewer'),large=document.querySelector('#large'),caption=document.querySelector('#caption');
+let catalog=[];
+function minuteLabel(sp,i){
+  if(i===0)return '0–'+sp.stageMinutes[0]+'분';
+  if(i<5)return sp.stageMinutes[i-1]+'–'+sp.stageMinutes[i]+'분';
+  return sp.growthMinutes+'분';
+}
+function render(){
+  const sp=catalog.find(x=>x.id===sel.value)||catalog[0];
+  if(!sp)return;
+  if(!sp.growthImages){
+    notice.textContent=sp.name+' 생장 이미지는 아직 등록되지 않았습니다.';
+    grid.innerHTML='<div class="empty">이미지 준비 중</div>';return;
+  }
+  notice.textContent=sp.name+' · '+sp.difficulty+' · 개화 '+sp.growthMinutes+'분 · 아래 6단계를 누르면 크게 볼 수 있습니다.';
+  grid.innerHTML=stages.map((s,i)=>{
+    const src='../'+sp.growthImages[s.key];
+    return '<button class="card" data-src="'+src+'" data-caption="'+sp.name+' · '+s.name+' · '+minuteLabel(sp,i)+'"><div class="image"><img src="'+src+'" alt="'+sp.name+' '+s.name+'" loading="eager"></div><div class="meta"><strong>'+(i+1)+'. '+s.name+'</strong><span>'+minuteLabel(sp,i)+'</span><small>'+s.key+'</small></div></button>';
+  }).join('');
+  grid.querySelectorAll('.card').forEach(b=>b.onclick=()=>{large.src=b.dataset.src;large.alt=b.dataset.caption;caption.textContent=b.dataset.caption;viewer.showModal()});
+}
+fetch('../data/flowers.json?test=1',{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error(r.status);return r.json()}).then(data=>{
+  catalog=data.species||[];
+  sel.innerHTML=catalog.map(x=>'<option value="'+x.id+'">'+x.name+' / '+x.nameEn+'</option>').join('');
+  sel.value=catalog.find(x=>x.growthImages)?.id||catalog[0]?.id||'';
+  sel.onchange=render;render();
+}).catch(e=>{notice.textContent='flowers.json을 불러오지 못했습니다: '+e.message;grid.innerHTML='<div class="empty">데이터 로드 실패</div>'});
+document.querySelector('#close').onclick=()=>viewer.close();
+viewer.onclick=e=>{if(e.target===viewer)viewer.close()};
+</script>
+</body></html>
