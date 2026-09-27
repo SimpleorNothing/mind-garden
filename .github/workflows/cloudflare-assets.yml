@@ -1,0 +1,51 @@
+name: Provision Cloudflare flower assets
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  provision:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm install --global wrangler@latest
+
+      - name: Verify Cloudflare credentials
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          wrangler whoami
+
+      - name: Create D1 database if needed
+        run: |
+          if ! wrangler d1 list | grep -q "mind-garden-db"; then
+            wrangler d1 create mind-garden-db
+          fi
+
+      - name: Create R2 bucket if needed
+        run: |
+          if ! wrangler r2 bucket list | grep -q "mind-garden-growth-images"; then
+            wrangler r2 bucket create mind-garden-growth-images
+          fi
+
+      - name: Apply schema and seed metadata
+        run: |
+          wrangler d1 execute mind-garden-db --remote --file=cloudflare/schema.sql
+          wrangler d1 execute mind-garden-db --remote --file=cloudflare/seed.sql
+
+      - name: Upload growth images
+        run: |
+          for f in assets/growth/calendula/*.webp; do
+            [ -e "$f" ] || continue
+            key="growth/calendula/$(basename "$f")"
+            wrangler r2 object put "mind-garden-growth-images/$key" --file="$f" --content-type="image/webp"
+          done
