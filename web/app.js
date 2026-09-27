@@ -73,12 +73,77 @@ let meta=loadMeta(),total=+(localStorage.sun||0),running=false,start=0,wakeLock=
 function saveMeta(){localStorage.setItem(META_KEY,JSON.stringify(meta))}
 function catalogItem(type,id){return CATALOG[type].find(x=>x.id===id)||CATALOG[type][0]}
 function activeSpecies(){return catalogItem('species',meta.active.species)}
+function growthTargetMs(){return activeSpecies().growthMinutes*MIN}
+function stageInfo(ratio){
+  if(!meta.active.planted)return {name:'씨앗 대기',key:'empty'};
+  if(ratio<.08)return {name:'씨앗',key:'seed'};
+  if(ratio<.22)return {name:'발아',key:'germination'};
+  if(ratio<.45)return {name:'새싹',key:'sprout'};
+  if(ratio<.72)return {name:'본잎',key:'leaves'};
+  if(ratio<1)return {name:'봉오리',key:'bud'};
+  return {name:'개화',key:'bloom'};
+}
+function petalRing(count,rx,ry,dist,fill){
+  let out='<g fill="'+fill+'">';
+  for(let i=0;i<count;i++)out+='<ellipse rx="'+rx+'" ry="'+ry+'" transform="rotate('+(i*360/count)+') translate(0 -'+dist+')"/>';
+  return out+'</g>';
+}
+function potBase(){
+  return '<ellipse cx="90" cy="207" rx="52" ry="8" fill="#000" opacity=".12"/><path d="M50 150h80l-8 51c-1 6-7 9-14 9H72c-7 0-13-3-14-9z" fill="#ece5d8"/><ellipse cx="90" cy="150" rx="40" ry="10" fill="#f7f0e4"/><ellipse cx="90" cy="150" rx="33" ry="7" fill="#493726"/>';
+}
+function flowerSVG(id,key){
+  const pot=potBase();
+  if(key==='empty')return '<svg viewBox="0 0 180 220" role="img">'+pot+'</svg>';
+  const seeds={
+    calendula:'<path d="M84 146c9-8 18-3 12 5-5 6-13 5-12-5z" fill="#c6a35f" stroke="#84682f" stroke-width="2"/>',
+    cornflower:'<ellipse cx="90" cy="146" rx="5" ry="8" fill="#b9a36c"/><path d="M90 138l-5-7m5 7v-9m0 9l5-7" stroke="#d9d1ad" stroke-width="1.4"/>',
+    pansy:'<ellipse cx="90" cy="146" rx="4.5" ry="5.5" fill="#6d4a2a"/>',
+    nigella:'<path d="M85 149l3-8 7 2 1 7-6 4z" fill="#181818"/>'
+  };
+  if(key==='seed')return '<svg viewBox="0 0 180 220" role="img">'+pot+seeds[id]+'</svg>';
+  if(key==='germination')return '<svg viewBox="0 0 180 220" role="img">'+pot+'<path d="M90 150c0-10 0-15 2-22" stroke="#6f9d4f" stroke-width="4" fill="none"/><path d="M92 130c-9-1-12-6-12-11 8-2 13 2 12 11z" fill="#91bf6d"/></svg>';
+  const stem='<path d="M90 150C90 132 91 111 90 91" fill="none" stroke="#4d7f3b" stroke-width="5" stroke-linecap="round"/>';
+  const cot='<path d="M90 132C77 131 71 123 71 114c12-2 20 4 19 18z" fill="#77ad58"/><path d="M91 128c3-11 11-17 21-16 0 11-7 18-21 16z" fill="#8abc65"/>';
+  if(key==='sprout')return '<svg viewBox="0 0 180 220" role="img">'+pot+stem+cot+'</svg>';
+  let leaves='',bud='',flower='';
+  if(id==='calendula'){
+    leaves='<path d="M90 124C70 121 65 110 68 101c16 1 23 9 22 23zM91 110c12-13 24-14 31-8-6 12-17 15-31 8z" fill="#6d9a50"/>';
+    bud='<circle cx="90" cy="87" r="8" fill="#76a44e"/>';
+    flower='<g transform="translate(90 82)">'+petalRing(14,6,18,13,'#ed9c2b')+'<circle r="10" fill="#7f5422"/><circle r="5" fill="#c77a19"/></g>';
+  }else if(id==='cornflower'){
+    leaves='<path d="M90 128c-12-10-18-20-15-29 10 4 15 13 15 29zM92 118c9-14 17-19 24-17-3 11-10 17-24 17z" fill="#789a78"/>';
+    bud='<path d="M82 91q8-13 16 0l-2 8H84z" fill="#607c58"/>';
+    flower='<g transform="translate(90 80)" fill="#477dcc">';
+    for(let i=0;i<12;i++)flower+='<path d="M0 0 L-5 -24 L0 -19 L5 -24 Z" transform="rotate('+(i*30)+')"/>';
+    flower+='<circle r="7" fill="#34538a"/></g>';
+  }else if(id==='pansy'){
+    leaves='<ellipse cx="76" cy="120" rx="17" ry="9" transform="rotate(-22 76 120)" fill="#668d49"/><ellipse cx="104" cy="116" rx="18" ry="10" transform="rotate(24 104 116)" fill="#739c52"/>';
+    bud='<ellipse cx="90" cy="88" rx="8" ry="11" fill="#694d83"/>';
+    flower='<g transform="translate(90 82)"><ellipse cx="-11" cy="-5" rx="15" ry="19" fill="#76519c"/><ellipse cx="11" cy="-5" rx="15" ry="19" fill="#76519c"/><ellipse cx="-10" cy="12" rx="14" ry="17" fill="#8b68ad"/><ellipse cx="10" cy="12" rx="14" ry="17" fill="#8b68ad"/><ellipse cy="17" rx="13" ry="17" fill="#f0c84f"/><path d="M-8 5L0 14 8 5M0 14v10" stroke="#4a315f" stroke-width="4" fill="none"/></g>';
+  }else{
+    leaves='<g stroke="#56805c" stroke-width="2" stroke-linecap="round"><path d="M90 134l-22-22m22 10l21-27m-20 19l-18-27m18 18l23-20"/><path d="M73 112l-10-2m10 2l-4-10m31-2l10-5m-10 5l3-11m-26 1l-8-8m8 8l2-12"/></g>';
+    bud='<path d="M84 92q6-14 12 0l-1 8H85z" fill="#5b8060"/>';
+    flower='<g transform="translate(90 80)">'+petalRing(8,7,21,9,'#9cc9dd')+'<circle r="8" fill="#527a83"/>';
+    for(let i=0;i<10;i++)flower+='<path d="M0 0v-13" transform="rotate('+(i*36)+')" stroke="#385e50" stroke-width="1"/>';
+    flower+='</g>';
+  }
+  return '<svg viewBox="0 0 180 220" role="img">'+pot+stem+cot+leaves+(key==='leaves'?'':(key==='bud'?bud:flower))+'</svg>';
+}
+function renderPlantVisual(ratio){
+  const sp=activeSpecies(),st=stageInfo(ratio);
+  plant.innerHTML=flowerSVG(sp.id,st.key);
+  plant.dataset.species=sp.id;
+  plant.dataset.pot=meta.active.pot;
+  stage.textContent=st.name;
+}
 function applyCosmetics(){
   const sp=activeSpecies();
   plant.dataset.species=sp.id;
   plant.dataset.pot=meta.active.pot;
   room.dataset.scene=meta.active.scene;
-  activePlantName.textContent=sp.icon+' '+sp.name+' 키우는 중';
+  activePlantName.textContent=meta.active.planted
+    ?sp.icon+' '+sp.name+' · '+sp.difficulty+' · '+sp.growthMinutes+'분'
+    :'씨앗을 선택해 심어주세요';
 }
 function refreshMetaSummary(){
   sunPoints.textContent=meta.points.toLocaleString()+'P';
