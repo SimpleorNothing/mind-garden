@@ -1,15 +1,23 @@
 const q=s=>document.querySelector(s),room=q('#room'),plant=q('#plant'),time=q('#time'),stage=q('#stage'),rest=q('#rest'),msg=q('#msg'),bar=q('#bar'),next=q('#next');let total=+(localStorage.sun||0),running=false,start=0;function draw(){let t=total+(running?Date.now()-start:0),m=Math.floor(t/60000),s=Math.floor(t/1000)%60;time.textContent=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');let data=m>=60?['나무',60]:m>=30?['화분',60]:m>=10?['잎',30]:['새싹',10];stage.textContent=data[0];plant.style.transform='translateX(-50%) scale('+(1+Math.min(m,60)/300)+')';bar.style.width=Math.min(100,m/data[1]*100)+'%';next.textContent=m>=60?'오늘의 광합성 완료':('다음 성장까지 '+(data[1]-m)+'분')}setInterval(draw,1000);draw();rest.onclick=()=>{if(!running){running=true;start=Date.now();rest.textContent='휴식 종료';room.classList.add('active');msg.textContent='광합성 중이에요. 이제 화면을 내려놓아도 좋아요.'}else{total+=Date.now()-start;localStorage.sun=total;running=false;rest.textContent='햇살 휴식 시작';room.classList.remove('active');msg.textContent='잘 쉬었어요. 식물이 조금 더 자랐습니다.'}draw()};q('#water').onclick=()=>{plant.style.transform='translateX(-50%) scale(1.08)';setTimeout(()=>plant.style.transform='translateX(-50%)',450);msg.textContent='물을 천천히 마시고 있어요.'};q('#leaf').onclick=()=>{plant.style.filter='drop-shadow(0 12px 7px #0002) brightness(1.18)';setTimeout(()=>plant.style.filter='',700);msg.textContent='잎이 반짝반짝 깨끗해졌어요.'};q('#photo').onchange=e=>{let f=e.target.files[0];if(!f)return;let r=new FileReader;r.onload=()=>{room.style.backgroundImage='url('+r.result+')';try{localStorage.room=r.result}catch(_){ }};r.readAsDataURL(f)};try{if(localStorage.room){room.style.backgroundImage='url('+localStorage.room+')';}}catch(_){};
 
-;(()=>{let x=parseFloat(localStorage.plantX)||50,y=parseFloat(localStorage.plantY)||72,size=parseFloat(localStorage.plantSize)||130,drag=false,pid=null;
-const tools=q('#plantTools'),minus=q('#plantMinus'),plus=q('#plantPlus');
-function place(){plant.style.setProperty('left',x+'%','important');plant.style.setProperty('top',y+'%','important');plant.style.setProperty('bottom','auto','important');plant.style.setProperty('width',size+'px','important');plant.style.setProperty('height',(size*1.31)+'px','important');plant.style.setProperty('transform','translate(-50%,-50%)','important')}
-function save(){localStorage.setItem('plantX',x);localStorage.setItem('plantY',y);localStorage.setItem('plantSize',size)}
-function pt(e){const r=room.getBoundingClientRect();return{x:(e.clientX-r.left)/r.width*100,y:(e.clientY-r.top)/r.height*100}}
-plant.addEventListener('pointerdown',e=>{if(e.button!==undefined&&e.button!==0)return;drag=true;pid=e.pointerId;plant.classList.add('dragging');try{plant.setPointerCapture(pid)}catch(_){};e.preventDefault()});
-plant.addEventListener('pointermove',e=>{if(!drag||e.pointerId!==pid)return;const p=pt(e);x=Math.max(5,Math.min(95,p.x));y=Math.max(10,Math.min(92,p.y));place();e.preventDefault()});
-function end(e){if(!drag)return;drag=false;pid=null;plant.classList.remove('dragging');save();e.preventDefault()}
-plant.addEventListener('pointerup',end);plant.addEventListener('pointercancel',end);
-function resize(delta,e){if(e){e.preventDefault();e.stopPropagation()}size=Math.max(60,Math.min(260,size+delta));place();save()}
-minus.addEventListener('pointerdown',e=>resize(-15,e));plus.addEventListener('pointerdown',e=>resize(15,e));
-tools.addEventListener('pointerdown',e=>e.stopPropagation());
-place()})();
+
+;(()=>{const roomPhoto=q('#roomPhoto'),editPanel=q('#editPanel'),editPlant=q('#editPlant'),editRoom=q('#editRoom'),minus=q('#sizeMinus'),plus=q('#sizePlus'),done=q('#editDone'),target=q('#editTarget');
+let px=parseFloat(localStorage.plantX)||50,py=parseFloat(localStorage.plantY)||72,ps=parseFloat(localStorage.plantSize)||130;
+let rx=parseFloat(localStorage.roomX)||50,ry=parseFloat(localStorage.roomY)||50,rs=parseFloat(localStorage.roomScale)||1;
+let mode='plant',editing=false,drag=false,pid=null,startX=0,startY=0,baseX=0,baseY=0;
+function plantPlace(){plant.style.setProperty('left',px+'%','important');plant.style.setProperty('top',py+'%','important');plant.style.setProperty('bottom','auto','important');plant.style.setProperty('width',ps+'px','important');plant.style.setProperty('height',(ps*1.31)+'px','important');plant.style.setProperty('transform','translate(-50%,-50%)','important')}
+function roomPlace(){roomPhoto.style.left=rx+'%';roomPhoto.style.top=ry+'%';roomPhoto.style.transform='translate(-50%,-50%) scale('+rs+')'}
+function save(){localStorage.plantX=px;localStorage.plantY=py;localStorage.plantSize=ps;localStorage.roomX=rx;localStorage.roomY=ry;localStorage.roomScale=rs}
+function setMode(m){mode=m;room.classList.toggle('edit-plant',m==='plant');room.classList.toggle('edit-room',m==='room');editPlant.classList.toggle('on',m==='plant');editRoom.classList.toggle('on',m==='room');target.textContent=m==='plant'?'화분 조절':'내 집 이미지 조절'}
+function beginEdit(m){editing=true;room.classList.add('editing');setMode(m)}
+function point(e){let r=room.getBoundingClientRect();return{x:(e.clientX-r.left)/r.width*100,y:(e.clientY-r.top)/r.height*100}}
+plant.addEventListener('pointerdown',e=>{if(!editing)beginEdit('plant');if(mode!=='plant')return;drag=true;pid=e.pointerId;try{plant.setPointerCapture(pid)}catch(_){};e.preventDefault()});
+roomPhoto.addEventListener('pointerdown',e=>{if(!editing)beginEdit('room');if(mode!=='room')return;drag=true;pid=e.pointerId;let p=point(e);startX=p.x;startY=p.y;baseX=rx;baseY=ry;try{roomPhoto.setPointerCapture(pid)}catch(_){};e.preventDefault()});
+room.addEventListener('pointermove',e=>{if(!drag||e.pointerId!==pid)return;let p=point(e);if(mode==='plant'){px=Math.max(4,Math.min(96,p.x));py=Math.max(8,Math.min(94,p.y));plantPlace()}else{rx=Math.max(0,Math.min(100,baseX+p.x-startX));ry=Math.max(0,Math.min(100,baseY+p.y-startY));roomPlace()}e.preventDefault()});
+function end(){drag=false;pid=null}room.addEventListener('pointerup',end);room.addEventListener('pointercancel',end);
+editPlant.onclick=e=>{e.stopPropagation();setMode('plant')};editRoom.onclick=e=>{e.stopPropagation();setMode('room')};
+minus.onclick=e=>{e.stopPropagation();if(mode==='plant')ps=Math.max(55,ps-12);else rs=Math.max(.6,rs-.08);plantPlace();roomPlace()};
+plus.onclick=e=>{e.stopPropagation();if(mode==='plant')ps=Math.min(280,ps+12);else rs=Math.min(2.5,rs+.08);plantPlace();roomPlace()};
+done.onclick=e=>{e.stopPropagation();save();editing=false;drag=false;room.classList.remove('editing','edit-plant','edit-room')};
+q('#photo').addEventListener('change',()=>setTimeout(()=>beginEdit('room'),100));
+plantPlace();roomPlace()})();
