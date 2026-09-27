@@ -287,6 +287,27 @@ plus.onclick=e=>{e.stopPropagation();if(mode==='plant')ps=Math.min(280,ps+12);el
 done.onclick=e=>{e.stopPropagation();save();editing=false;drag=false;room.classList.remove('editing','edit-plant','edit-room')};
 
 plantPlace();roomPlace()})();
+
+// Evening apartment lights are anchored to the window in the supplied room photo.
+;(()=>{
+  const lights=document.createElement('div');
+  lights.id='cityLights';
+  lights.setAttribute('aria-hidden','true');
+  const windows=[
+    [48,55],[53,57],[59,56],[65,55],[72,56],[78,54],
+    [48,61],[54,62],[60,61],[66,62],[73,61],[79,62],
+    [49,68],[55,67],[61,69],[67,68],[74,68],[80,67],
+    [49,74],[55,75],[62,74],[68,75],[75,74],[81,75]
+  ];
+  windows.forEach(([x,y],i)=>{
+    if(![0,2,4,7,10,12,15,17,19,21,23].includes(i))return;
+    const pane=document.createElement('i');
+    pane.style.left=x+'%';
+    pane.style.top=y+'%';
+    lights.appendChild(pane);
+  });
+  room.insertBefore(lights,q('#plantShadow'));
+})();
 ;(()=>{const light=q('#liveLight'),sun=q('#sun'),shadow=q('#plantShadow');const rise=6*60+18,set=18*60+24;
 function live(){if(room.dataset.live==='0'){room.classList.remove('live-night','live-dawn','live-day','live-evening');sun.style.opacity='0';shadow.style.opacity='0';return}const n=new Date(),m=n.getHours()*60+n.getMinutes(),day=m>=rise&&m<=set,p=Math.max(0,Math.min(1,(m-rise)/(set-rise))),noon=(rise+set)/2,side=Math.max(-1,Math.min(1,(m-noon)/((set-rise)/2)));
 room.classList.remove('live-night','live-dawn','live-day','live-evening');
@@ -295,7 +316,7 @@ if(day){sun.style.left=(7+86*p)+'%';sun.style.right='auto';sun.style.top=(38-27*
 const pr=plant.getBoundingClientRect(),rr=room.getBoundingClientRect(),cx=pr.left-rr.left+pr.width/2,cy=pr.bottom-rr.top-8;
 shadow.style.left=cx+'px';shadow.style.top=cy+'px';shadow.style.opacity=day?String(.18+.22*Math.abs(side)):'0';shadow.style.width=(55+105*Math.abs(side))+'px';shadow.style.transform='rotate('+(90+62*side)+'deg)';
 }
-live();setInterval(live,30000);window.addEventListener('resize',live);room.addEventListener('pointerup',()=>setTimeout(live,0));q('#editDone').addEventListener('click',()=>setTimeout(live,0));
+live();setInterval(live,30000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)live()});window.addEventListener('pageshow',live);window.addEventListener('resize',live);new MutationObserver(live).observe(room,{attributes:true,attributeFilter:['data-live']});room.addEventListener('pointerup',()=>setTimeout(live,0));q('#editDone').addEventListener('click',()=>setTimeout(live,0));
 })();
 ;(()=>{const home=q('#homeSheet'),add=q('#addSheet'),list=q('#plantList'),photo=q('#photo'),virtual=q('#virtualChoices'),name=q('#newName'),place=q('#newPlace'),live=q('#newLive');let imageMode='mine',virtualId='',pendingImage='';let plants=[];try{plants=JSON.parse(localStorage.myPlants||'[]')}catch(_){}
 function compressImage(file,cb){let r=new FileReader;r.onload=()=>{let im=new Image;im.onload=()=>{let max=1400,s=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);c.getContext('2d').drawImage(im,0,0,c.width,c.height);let out=c.toDataURL('image/jpeg',.78);cb(out)};im.src=r.result};r.readAsDataURL(file)}
