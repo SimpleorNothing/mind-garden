@@ -54,36 +54,28 @@
 - 관리 부족으로 꽃이 죽거나 모든 진행이 초기화되지는 않도록 한다.
 
 ## 6. 성장 이미지 운영 규칙
-- 현재 운영 저장소는 **GitHub `SimpleorNothing/mind-garden`** 하나로 통일한다.
-- 꽃 카탈로그: `web/data/flowers.js`
-- 생장 이미지: `web/assets/growth/{species_key}/{stage_key}.webp`
-- 이미지 포맷: WebP 권장
-- 권장 크기: 768×768 이하
-- 동일 종/동일 단계의 기본 이미지는 공통 사용한다.
-- 새 이미지 교체 시 파일 경로 또는 데이터 버전을 갱신하고 웹에서 먼저 검증한다.
-- 사용자별 포인트/보유 씨앗/진행상태는 현재 기기 localStorage에 저장한다.
-- GitHub에는 사용자별 쓰기 데이터를 저장하지 않는다.
+- 현재 운영 원본은 GitHub 저장소에서 관리한다.
+- 꽃 카탈로그: `web/data/flowers.json`
+- 성장 이미지: `web/assets/growth/{species_key}/{stage_key}.svg`
+- 앱은 GitHub Pages에 배포된 JSON과 이미지를 읽는다.
+- 새 꽃을 추가할 때 JSON과 6단계 이미지를 같은 PR에서 갱신한다.
+- 사용자별 포인트/진행 데이터는 현재 기기 localStorage에 저장한다.
 
 ## 7. GitHub 데이터 구조
 ```
 web/
-├─ data/
-│  └─ flowers.js
-└─ assets/
-   └─ growth/
-      ├─ calendula/
-      │  ├─ seed.webp
-      │  ├─ germination.webp
-      │  ├─ sprout.webp
-      │  ├─ true_leaves.webp
-      │  ├─ bud.webp
-      │  └─ bloom.webp
-      ├─ cornflower/
-      ├─ pansy/
-      └─ nigella/
+  data/flowers.json
+  assets/growth/
+    calendula/
+      seed.svg
+      germination.svg
+      sprout.svg
+      true_leaves.svg
+      bud.svg
+      bloom.svg
 ```
 
-현재 단계에서는 Cloudflare D1/R2를 사용하지 않는다. 마켓 공개 후 공개 정원, 로그인, 여러 기기 동기화처럼 서버 쓰기 기능이 필요해지는 시점에 별도 백엔드 DB/Object Storage를 검토한다.
+GitHub는 현재 단계에서 꽃 카탈로그와 정적 성장 이미지의 원본 저장소로 사용한다. 공개 정원처럼 다중 사용자가 쓰는 데이터가 생기면 별도 실시간 DB를 도입한다.
 
 ## 8. 공개 정원 확장 원칙
 - 완성 꽃은 기본 `private`
