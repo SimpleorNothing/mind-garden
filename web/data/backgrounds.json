@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "updatedAt": "2026-09-27",
+  "storage": "github",
+  "backgrounds": [
+    {
+      "id": "sunny-living-room",
+      "name": "햇살 좋은 거실 창가",
+      "type": "virtual",
+      "image": "assets/backgrounds/sunny-living-room.webp",
+      "source": "split-from-approved-virtual-scenes"
+    },
+    {
+      "id": "calm-study-desk",
+      "name": "차분한 공부방 책상",
+      "type": "virtual",
+      "image": "assets/backgrounds/calm-study-desk.webp",
+      "source": "split-from-approved-virtual-scenes"
+    },
+    {
+      "id": "green-veranda-garden",
+      "name": "초록빛 베란다 정원",
+      "type": "virtual",
+      "image": "assets/backgrounds/green-veranda-garden.webp",
+      "source": "split-from-approved-virtual-scenes"
+    }
+  ]
+}
