@@ -22,7 +22,7 @@ done.onclick=e=>{e.stopPropagation();save();editing=false;drag=false;room.classL
 q('#photo').addEventListener('change',()=>setTimeout(()=>beginEdit('room'),100));
 plantPlace();roomPlace()})();
 ;(()=>{const light=q('#liveLight'),sun=q('#sun'),shadow=q('#plantShadow');const rise=6*60+18,set=18*60+24;
-function live(){const n=new Date(),m=n.getHours()*60+n.getMinutes(),day=m>=rise&&m<=set,p=Math.max(0,Math.min(1,(m-rise)/(set-rise))),noon=(rise+set)/2,side=Math.max(-1,Math.min(1,(m-noon)/((set-rise)/2)));
+function live(){if(room.dataset.live==='0'){room.classList.remove('live-night','live-dawn','live-day','live-evening');sun.style.opacity='0';shadow.style.opacity='0';return}const n=new Date(),m=n.getHours()*60+n.getMinutes(),day=m>=rise&&m<=set,p=Math.max(0,Math.min(1,(m-rise)/(set-rise))),noon=(rise+set)/2,side=Math.max(-1,Math.min(1,(m-noon)/((set-rise)/2)));
 room.classList.remove('live-night','live-dawn','live-day','live-evening');
 if(!day)room.classList.add('live-night');else if(p<.16)room.classList.add('live-dawn');else if(p>.82)room.classList.add('live-evening');else room.classList.add('live-day');
 if(day){sun.style.left=(7+86*p)+'%';sun.style.right='auto';sun.style.top=(38-27*Math.sin(Math.PI*p))+'px';sun.style.opacity='1';sun.style.filter='brightness('+(1+.18*Math.sin(Math.PI*p))+')';}
@@ -31,3 +31,13 @@ shadow.style.left=cx+'px';shadow.style.top=cy+'px';shadow.style.opacity=day?Stri
 }
 live();setInterval(live,30000);window.addEventListener('resize',live);room.addEventListener('pointerup',()=>setTimeout(live,0));q('#editDone').addEventListener('click',()=>setTimeout(live,0));
 })();
+;(()=>{const home=q('#homeSheet'),add=q('#addSheet'),list=q('#plantList'),photo=q('#photo'),virtual=q('#virtualChoices'),name=q('#newName'),place=q('#newPlace'),live=q('#newLive');let imageMode='mine',virtualId='',pendingImage='';let plants=[];try{plants=JSON.parse(localStorage.myPlants||'[]')}catch(_){}
+function bgFor(v){return v==='desk'?'linear-gradient(135deg,#d9cbb8,#f4eee4)':v==='balcony'?'linear-gradient(135deg,#b9d4b1,#e8f0df)':'linear-gradient(135deg,#f6d99a,#d8e8e7)'}
+function render(){list.innerHTML=plants.length?'':'<p style="color:#788078">아직 등록한 식물이 없습니다. 거실 창가나 공부방 책상 위의 식물을 추가해 보세요.</p>';plants.forEach((p,i)=>{let d=document.createElement('div');d.className='plantItem';let bg=p.image?'url('+p.image+')':bgFor(p.virtual);d.innerHTML='<div class="plantThumb" style="background:'+bg+'">🪴</div><div><strong>'+p.name+'</strong><small>'+p.place+' · '+(p.live?'LIVE':'고정 환경')+'</small></div><button>보기</button>';d.querySelector('button').onclick=()=>{if(p.image){q('#roomPhoto').src=p.image;room.classList.add('has-photo')}else{q('#roomPhoto').removeAttribute('src');room.classList.remove('has-photo');room.style.background=bgFor(p.virtual)};room.dataset.live=p.live?'1':'0';home.classList.remove('open')};list.appendChild(d)})}
+q('#myHome').onclick=()=>{render();home.classList.add('open')};q('#homeClose').onclick=()=>home.classList.remove('open');q('#addPlant').onclick=()=>{home.classList.remove('open');add.classList.add('open')};q('#addClose').onclick=()=>add.classList.remove('open');
+q('#useMine').onclick=()=>{imageMode='mine';q('#useMine').classList.add('on');q('#useVirtual').classList.remove('on');virtual.classList.remove('show');photo.click()};
+q('#useVirtual').onclick=()=>{imageMode='virtual';q('#useVirtual').classList.add('on');q('#useMine').classList.remove('on');virtual.classList.add('show')};
+photo.addEventListener('change',e=>{let f=e.target.files[0];if(!f)return;let r=new FileReader;r.onload=()=>pendingImage=r.result;r.readAsDataURL(f)});
+virtual.querySelectorAll('button').forEach(b=>b.onclick=()=>{virtualId=b.dataset.v;virtual.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b))});
+q('#savePlant').onclick=()=>{if(!name.value.trim()||!place.value.trim())return alert('식물 이름과 장소를 입력해 주세요.');if(imageMode==='mine'&&!pendingImage)return alert('내 이미지를 선택해 주세요.');if(imageMode==='virtual'&&!virtualId)return alert('가상 이미지를 선택해 주세요.');plants.push({name:name.value.trim(),place:place.value.trim(),live:live.checked,image:imageMode==='mine'?pendingImage:'',virtual:imageMode==='virtual'?virtualId:''});try{localStorage.myPlants=JSON.stringify(plants)}catch(_){alert('이미지 용량이 커 저장하지 못했습니다. 더 작은 이미지를 선택해 주세요.');return}name.value='';place.value='';pendingImage='';virtualId='';add.classList.remove('open');render();home.classList.add('open')};
+render()})();
