@@ -4,10 +4,10 @@ const MIN=60000,META_KEY='mindGardenMetaV1';
 
 const CATALOG={
   species:[
-    {id:'calendula',name:'금잔화',icon:'🟠',seedPrice:40,growthMinutes:90,reward:120,difficulty:'쉬움',season:'9월 추천'},
-    {id:'cornflower',name:'수레국화',icon:'🔵',seedPrice:60,growthMinutes:120,reward:150,difficulty:'보통',season:'9월 추천'},
-    {id:'pansy',name:'팬지',icon:'🟣',seedPrice:80,growthMinutes:150,reward:180,difficulty:'보통+',season:'9월~초10월'},
-    {id:'nigella',name:'니겔라',icon:'💠',seedPrice:100,growthMinutes:180,reward:220,difficulty:'어려움',season:'9월 추천'}
+    {id:'calendula',name:'금잔화',icon:'🟠',seedPrice:40,growthMinutes:90,stageMinutes:[10,20,40,60,90],reward:120,difficulty:'쉬움',season:'9월 추천'},
+    {id:'cornflower',name:'수레국화',icon:'🔵',seedPrice:60,growthMinutes:120,stageMinutes:[10,30,50,90,120],reward:150,difficulty:'보통',season:'9월 추천'},
+    {id:'pansy',name:'팬지',icon:'🟣',seedPrice:80,growthMinutes:150,stageMinutes:[10,30,70,110,150],reward:180,difficulty:'보통+',season:'9월~초10월'},
+    {id:'nigella',name:'니겔라',icon:'💠',seedPrice:100,growthMinutes:180,stageMinutes:[10,40,80,130,180],reward:220,difficulty:'어려움',season:'9월 추천'}
   ],
   pots:[
     {id:'ivory',name:'아이보리 화분',icon:'◯',price:0},
@@ -74,14 +74,15 @@ function saveMeta(){localStorage.setItem(META_KEY,JSON.stringify(meta))}
 function catalogItem(type,id){return CATALOG[type].find(x=>x.id===id)||CATALOG[type][0]}
 function activeSpecies(){return catalogItem('species',meta.active.species)}
 function growthTargetMs(){return activeSpecies().growthMinutes*MIN}
-function stageInfo(ratio){
+function stageInfo(elapsedMinutes){
   if(!meta.active.planted)return {name:'씨앗 대기',key:'empty'};
-  if(ratio<.08)return {name:'씨앗',key:'seed'};
-  if(ratio<.22)return {name:'발아',key:'germination'};
-  if(ratio<.45)return {name:'새싹',key:'sprout'};
-  if(ratio<.72)return {name:'본잎',key:'leaves'};
-  if(ratio<1)return {name:'봉오리',key:'bud'};
-  return {name:'개화',key:'bloom'};
+  const [germination,sprout,leaves,bud,bloom]=activeSpecies().stageMinutes;
+  if(elapsedMinutes<germination)return {name:'씨앗',key:'seed',nextAt:germination};
+  if(elapsedMinutes<sprout)return {name:'발아',key:'germination',nextAt:sprout};
+  if(elapsedMinutes<leaves)return {name:'새싹',key:'sprout',nextAt:leaves};
+  if(elapsedMinutes<bud)return {name:'본잎',key:'leaves',nextAt:bud};
+  if(elapsedMinutes<bloom)return {name:'봉오리',key:'bud',nextAt:bloom};
+  return {name:'개화',key:'bloom',nextAt:null};
 }
 function petalRing(count,rx,ry,dist,fill){
   let out='<g fill="'+fill+'">';
@@ -129,8 +130,8 @@ function flowerSVG(id,key){
   }
   return '<svg viewBox="0 0 180 220" role="img">'+pot+stem+cot+leaves+(key==='leaves'?'':(key==='bud'?bud:flower))+'</svg>';
 }
-function renderPlantVisual(ratio){
-  const sp=activeSpecies(),st=stageInfo(ratio);
+function renderPlantVisual(ratio,elapsedMinutes){
+  const sp=activeSpecies(),st=stageInfo(elapsedMinutes);
   plant.innerHTML=flowerSVG(sp.id,st.key);
   plant.dataset.species=sp.id;
   plant.dataset.pot=meta.active.pot;
@@ -183,7 +184,7 @@ function draw(){
   let t=total+(running?Date.now()-start:0),m=Math.floor(t/MIN),sec=Math.floor(t/1000)%60;
   const target=activeSpecies().growthMinutes,ratio=meta.active.planted?Math.min(1,t/(target*MIN)):0;
   time.textContent=String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');
-  renderPlantVisual(ratio);
+  renderPlantVisual(ratio,m);
   plant.style.transform='translateX(-50%) scale('+(1+ratio*.2)+')';
   bar.style.width=(ratio*100)+'%';
   if(!meta.active.planted){
@@ -194,7 +195,8 @@ function draw(){
     harvest.textContent='꽃 수확하기 · +'+activeSpecies().reward+'P';
     harvest.hidden=false;rest.disabled=true;
   }else{
-    next.textContent='개화까지 '+Math.max(0,target-m)+'분 · '+activeSpecies().difficulty;
+    const st=stageInfo(m),toNext=st.nextAt===null?0:Math.max(0,st.nextAt-m);
+    next.textContent=(st.nextAt===target?'개화':'다음 단계')+'까지 '+toNext+'분 · '+activeSpecies().difficulty;
     harvest.hidden=true;rest.disabled=false;
   }
 }
