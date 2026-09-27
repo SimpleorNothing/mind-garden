@@ -191,6 +191,7 @@ function draw(){
     harvest.hidden=true;rest.disabled=true;
   }else if(ratio>=1){
     next.textContent='꽃이 활짝 폈어요. 수확하면 햇살 포인트를 받아요.';
+    harvest.textContent='꽃 수확하기 · +'+activeSpecies().reward+'P';
     harvest.hidden=false;rest.disabled=true;
   }else{
     next.textContent='개화까지 '+Math.max(0,target-m)+'분 · '+activeSpecies().difficulty;
@@ -316,8 +317,8 @@ render()})();
     if(!collection)return;
     if(!meta.collection.length){collection.innerHTML='<p class="emptyState">아직 완성한 꽃이 없습니다. 씨앗을 심고 햇살 휴식으로 꽃을 피워보세요.</p>';return}
     collection.innerHTML=meta.collection.map(x=>{
-      const sp=catalogItem('species',x.species),d=new Date(x.completedAt);
-      return '<article class="collectionCard"><div class="collectionIcon">'+sp.icon+'</div><div><strong>'+sp.name+'</strong><small>'+d.toLocaleDateString('ko-KR')+' 개화 · '+(x.focusMinutes||sp.growthMinutes)+'분 · 공개 안 함</small></div><span>완성</span></article>'
+      let sp=CATALOG.species.find(y=>y.id===x.species);if(!sp)sp={icon:'🪴',name:x.speciesName||'이전 식물',growthMinutes:x.focusMinutes||60};const d=new Date(x.completedAt);
+      return '<article class="collectionCard"><div class="collectionIcon">'+sp.icon+'</div><div><strong>'+sp.name+'</strong><small>'+d.toLocaleDateString('ko-KR')+' 완성 · '+(x.focusMinutes||sp.growthMinutes)+'분 · 공개 안 함</small></div><span>완성</span></article>'
     }).join('');
   }
   function renderCodex(){
