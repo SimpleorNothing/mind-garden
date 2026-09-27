@@ -2,7 +2,7 @@ const q=s=>document.querySelector(s),room=q('#room'),plant=q('#plant'),time=q('#
 const harvest=q('#harvest'),sunPoints=q('#sunPoints'),completedPlants=q('#completedPlants'),activePlantName=q('#activePlantName');
 const MIN=60000,META_KEY='mindGardenMetaV1';
 
-const CATALOG={
+let CATALOG={
   species:(window.MIND_GARDEN_FLOWERS&&window.MIND_GARDEN_FLOWERS.species)||[],
   pots:[
     {id:'ivory',name:'아이보리 화분',icon:'◯',price:0},
@@ -29,6 +29,20 @@ function loadFlowerCatalogFromGitHub(){
     .catch(()=>{});
 }
 loadFlowerCatalogFromGitHub();
+
+async function loadGitHubFlowerCatalog(){
+  try{
+    const res=await fetch('data/flowers.json?v=1',{cache:'no-store'});
+    if(!res.ok)throw new Error('flowers.json '+res.status);
+    const data=await res.json();
+    if(Array.isArray(data.species)&&data.species.length){
+      CATALOG.species=data.species;
+      applyCosmetics();draw();
+      if(window.renderGardenRewards)window.renderGardenRewards();
+    }
+  }catch(e){console.warn('GitHub flower catalog fallback',e)}
+}
+loadGitHubFlowerCatalog();
 
 function localDateKey(d=new Date()){
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
@@ -138,6 +152,7 @@ function flowerSVG(id,key){
   }
   return '<svg viewBox="0 0 180 220" role="img">'+pot+stem+cot+leaves+(key==='leaves'?'':(key==='bud'?bud:flower))+'</svg>';
 }
+window.__flowerFallback=(id,key)=>flowerSVG(id,key);
 function renderPlantVisual(ratio,elapsedMinutes){
   const sp=activeSpecies(),st=stageInfo(elapsedMinutes);
   const image=sp.growthImages&&sp.growthImages[st.key];
