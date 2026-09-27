@@ -20,12 +20,12 @@
       "difficulty": "쉬움",
       "season": "9월 추천",
       "growthImages": {
-        "seed": "assets/growth/calendula/seed.svg",
-        "germination": "assets/growth/calendula/germination.svg",
-        "sprout": "assets/growth/calendula/sprout.svg",
-        "leaves": "assets/growth/calendula/true_leaves.svg",
-        "bud": "assets/growth/calendula/bud.svg",
-        "bloom": "assets/growth/calendula/bloom.svg"
+        "seed": "assets/growth/calendula/seed.webp",
+        "germination": "assets/growth/calendula/germination.webp",
+        "sprout": "assets/growth/calendula/sprout.webp",
+        "leaves": "assets/growth/calendula/true_leaves.webp",
+        "bud": "assets/growth/calendula/bud.webp",
+        "bloom": "assets/growth/calendula/bloom.webp"
       }
     },
     {
