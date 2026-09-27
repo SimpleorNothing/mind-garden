@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "updatedAt": "2026-09-27",
+  "updatedAt": "2026-09-28",
   "storage": "github",
   "backgrounds": [
     {
@@ -15,10 +15,7 @@
       "name": "차분한 공부방 책상",
       "type": "virtual",
       "image": "assets/backgrounds/calm-study-desk.webp",
-      "source": "user-approved-collage-scene-2",
-      "width": 280,
-      "height": 503,
-      "sha256": "92739e520d34168b8d1c84ec3e9c000ae221d40c49d0225a7943a42520756685"
+      "source": "split-from-approved-virtual-scenes"
     },
     {
       "id": "green-veranda-garden",
@@ -26,6 +23,20 @@
       "type": "virtual",
       "image": "assets/backgrounds/green-veranda-garden.webp",
       "source": "split-from-approved-virtual-scenes"
+    },
+    {
+      "id": "tea-yard",
+      "name": "첨부 사진 · 차 마시는 뜰",
+      "type": "reference",
+      "image": "assets/backgrounds/tea-yard.jpg",
+      "source": "user-upload"
+    },
+    {
+      "id": "tea-yard2",
+      "name": "첨부 사진 · 창가와 화분",
+      "type": "reference",
+      "image": "assets/backgrounds/tea-yard2.jpg",
+      "source": "user-upload"
     }
   ]
 }
