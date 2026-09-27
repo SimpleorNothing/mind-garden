@@ -1,61 +1,184 @@
 const q=s=>document.querySelector(s),room=q('#room'),plant=q('#plant'),time=q('#time'),stage=q('#stage'),rest=q('#rest'),msg=q('#msg'),bar=q('#bar'),next=q('#next');
-let total=+(localStorage.sun||0),running=false,start=0,wakeLock=null;
+const harvest=q('#harvest'),sunPoints=q('#sunPoints'),completedPlants=q('#completedPlants'),activePlantName=q('#activePlantName');
+const MIN=60000,GROWTH_TARGET=60*MIN,META_KEY='mindGardenMetaV1';
 
+const CATALOG={
+  species:[
+    {id:'monstera',name:'몬스테라',icon:'🌿',price:0},
+    {id:'rubber',name:'고무나무',icon:'🌱',price:60},
+    {id:'olive',name:'올리브나무',icon:'🫒',price:120},
+    {id:'fern',name:'보스턴고사리',icon:'🌿',price:160},
+    {id:'lavender',name:'라벤더',icon:'🪻',milestone:'week7'}
+  ],
+  pots:[
+    {id:'ivory',name:'아이보리 화분',icon:'◯',price:0},
+    {id:'clay',name:'테라코타 화분',icon:'🟤',price:100},
+    {id:'moss',name:'모스 화분',icon:'🟢',price:150},
+    {id:'sage',name:'세이지 화분',icon:'🪴',milestone:'week3'}
+  ],
+  scenes:[
+    {id:'window',name:'햇살 창가',icon:'☀️',price:0},
+    {id:'warm',name:'따뜻한 거실',icon:'🛋️',price:150},
+    {id:'forest',name:'초록 정원',icon:'🌳',price:200}
+  ]
+};
+
+function localDateKey(d=new Date()){
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function weekKey(d=new Date()){
+  const x=new Date(d.getFullYear(),d.getMonth(),d.getDate()),day=(x.getDay()+6)%7;
+  x.setDate(x.getDate()-day);
+  return localDateKey(x);
+}
+function defaultMeta(){
+  return {
+    schemaVersion:1,
+    points:0,
+    completedCount:0,
+    codex:{},
+    collection:[],
+    inventory:{species:['monstera'],pots:['ivory'],scenes:['window']},
+    active:{species:'monstera',pot:'ivory',scene:'window'},
+    dailyFocus:{},
+    week:{key:weekKey(),days:[],bonus3:false,bonus7:false},
+    lastDailyCompletionBonus:'',
+    social:{publicGardenOptIn:false,gardenId:null,displayName:'',syncRevision:0}
+  };
+}
+function loadMeta(){
+  let m=defaultMeta();
+  try{
+    const saved=JSON.parse(localStorage.getItem(META_KEY)||'null');
+    if(saved&&typeof saved==='object'){
+      m={...m,...saved};
+      m.inventory={...m.inventory,...(saved.inventory||{})};
+      m.active={...m.active,...(saved.active||{})};
+      m.social={...m.social,...(saved.social||{})};
+      m.codex=saved.codex||{};
+      m.collection=Array.isArray(saved.collection)?saved.collection:[];
+      m.dailyFocus=saved.dailyFocus||{};
+      m.week={...m.week,...(saved.week||{})};
+    }
+  }catch(_){}
+  if(m.week.key!==weekKey())m.week={key:weekKey(),days:[],bonus3:false,bonus7:false};
+  return m;
+}
+let meta=loadMeta(),total=+(localStorage.sun||0),running=false,start=0,wakeLock=null;
+
+function saveMeta(){localStorage.setItem(META_KEY,JSON.stringify(meta))}
+function catalogItem(type,id){return CATALOG[type].find(x=>x.id===id)||CATALOG[type][0]}
+function activeSpecies(){return catalogItem('species',meta.active.species)}
+function applyCosmetics(){
+  const sp=activeSpecies();
+  plant.dataset.species=sp.id;
+  plant.dataset.pot=meta.active.pot;
+  room.dataset.scene=meta.active.scene;
+  activePlantName.textContent=sp.icon+' '+sp.name+' 키우는 중';
+}
+function refreshMetaSummary(){
+  sunPoints.textContent=meta.points.toLocaleString()+'P';
+  completedPlants.textContent=meta.completedCount.toLocaleString();
+  q('#sheetPoints')&&(q('#sheetPoints').textContent=meta.points.toLocaleString()+'P');
+  q('#sheetCompleted')&&(q('#sheetCompleted').textContent=meta.completedCount.toLocaleString());
+  q('#weekDays')&&(q('#weekDays').textContent=(meta.week.days?.length||0)+'/7');
+}
+function showReward(text){
+  const el=q('#rewardToast');if(!el)return;
+  el.textContent=text;el.classList.add('show');
+  clearTimeout(showReward.t);showReward.t=setTimeout(()=>el.classList.remove('show'),2600);
+}
+function unlockWeeklyRewards(){
+  const n=meta.week.days.length;
+  if(n>=3&&!meta.week.bonus3){
+    meta.week.bonus3=true;
+    if(!meta.inventory.pots.includes('sage'))meta.inventory.pots.push('sage');
+    showReward('이번 주 3일 달성 · 세이지 화분 해금');
+  }
+  if(n>=7&&!meta.week.bonus7){
+    meta.week.bonus7=true;
+    if(!meta.inventory.species.includes('lavender'))meta.inventory.species.push('lavender');
+    showReward('이번 주 7일 달성 · 라벤더 씨앗 해금');
+  }
+}
+function recordFocus(ms){
+  if(ms<=0)return;
+  const day=localDateKey();
+  meta.dailyFocus[day]=(meta.dailyFocus[day]||0)+ms;
+  if(meta.dailyFocus[day]>=10*MIN&&!meta.week.days.includes(day)){
+    meta.week.days.push(day);unlockWeeklyRewards();
+  }
+  saveMeta();
+}
 function draw(){
-  let t=total+(running?Date.now()-start:0),m=Math.floor(t/60000),s=Math.floor(t/1000)%60;
+  let t=total+(running?Date.now()-start:0),m=Math.floor(t/MIN),s=Math.floor(t/1000)%60;
   time.textContent=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
-  let data=m>=60?['나무',60]:m>=30?['화분',60]:m>=10?['잎',30]:['새싹',10];
+  let data=m>=60?['완성',60]:m>=30?['화분',60]:m>=10?['잎',30]:['새싹',10];
   stage.textContent=data[0];
   plant.style.transform='translateX(-50%) scale('+(1+Math.min(m,60)/300)+')';
-  bar.style.width=Math.min(100,m/data[1]*100)+'%';
-  next.textContent=m>=60?'오늘의 광합성 완료':('다음 성장까지 '+(data[1]-m)+'분')
+  bar.style.width=Math.min(100,m/60*100)+'%';
+  if(m>=60){
+    next.textContent='완성됐어요. 수확하면 햇살 포인트를 받아요.';
+    harvest.hidden=false;
+  }else{
+    next.textContent='완성까지 '+(60-m)+'분';
+    harvest.hidden=true;
+  }
 }
 setInterval(draw,1000);draw();
 
 async function setScreenAwake(on){
   try{
     if(window.AndroidBridge&&typeof window.AndroidBridge.setKeepScreenOn==='function'){
-      window.AndroidBridge.setKeepScreenOn(on);
-      return;
+      window.AndroidBridge.setKeepScreenOn(on);return;
     }
-    if(on&&'wakeLock' in navigator){
-      if(!wakeLock) wakeLock=await navigator.wakeLock.request('screen');
-    }else if(!on&&wakeLock){
-      await wakeLock.release();
-      wakeLock=null;
-    }
+    if(on&&'wakeLock' in navigator){if(!wakeLock)wakeLock=await navigator.wakeLock.request('screen')}
+    else if(!on&&wakeLock){await wakeLock.release();wakeLock=null}
   }catch(_){wakeLock=null}
 }
-
 function startRest(){
-  if(running)return;
-  running=true;
-  start=Date.now();
-  rest.textContent='휴식 종료';
-  room.classList.add('active');
+  if(running||total>=GROWTH_TARGET)return;
+  running=true;start=Date.now();rest.textContent='휴식 종료';room.classList.add('active');
   msg.textContent='광합성 중이에요. 화면은 켜진 상태로 유지됩니다.';
-  setScreenAwake(true);
-  draw();
+  setScreenAwake(true);draw();
 }
-
 function stopRest(reason='manual'){
   if(!running)return;
-  total+=Date.now()-start;
-  localStorage.sun=total;
-  running=false;
-  rest.textContent='햇살 휴식 시작';
-  room.classList.remove('active');
-  setScreenAwake(false);
-  msg.textContent=reason==='background'
-    ?'앱을 벗어나 햇살 휴식이 정지됐어요. 다시 시작해 주세요.'
-    :'잘 쉬었어요. 식물이 조금 더 자랐습니다.';
+  const elapsed=Date.now()-start;
+  total+=elapsed;localStorage.sun=total;recordFocus(elapsed);
+  running=false;rest.textContent='햇살 휴식 시작';room.classList.remove('active');setScreenAwake(false);
+  msg.textContent=reason==='background'?'앱을 벗어나 햇살 휴식이 정지됐어요. 다시 시작해 주세요.':'잘 쉬었어요. 식물이 조금 더 자랐습니다.';
   draw();
 }
-
+function harvestPlant(){
+  if(running)stopRest('manual');
+  if(total<GROWTH_TARGET)return;
+  const sp=activeSpecies(),today=localDateKey();
+  let reward=100;
+  if(meta.lastDailyCompletionBonus!==today){reward+=20;meta.lastDailyCompletionBonus=today}
+  meta.points+=reward;meta.completedCount+=1;
+  meta.codex[sp.id]=(meta.codex[sp.id]||0)+1;
+  meta.collection.unshift({
+    id:'plant-'+Date.now(),
+    species:sp.id,
+    speciesName:sp.name,
+    completedAt:new Date().toISOString(),
+    focusMinutes:60,
+    visibility:'private',
+    shareId:null
+  });
+  total=Math.max(0,total-GROWTH_TARGET);localStorage.sun=total;
+  saveMeta();refreshMetaSummary();applyCosmetics();renderGardenRewards();
+  showReward(sp.name+' 완성 · +'+reward+'P');
+  msg.textContent=reward>100?'오늘 첫 완성 보너스까지 받았어요.':'완성한 식물이 내 정원에 보관됐어요.';
+  draw();
+}
 rest.onclick=()=>running?stopRest('manual'):startRest();
+harvest.onclick=harvestPlant;
 window.mindGardenPauseForBackground=()=>stopRest('background');
 document.addEventListener('visibilitychange',()=>{if(document.hidden)stopRest('background')});
 window.addEventListener('pagehide',()=>stopRest('background'));
+applyCosmetics();refreshMetaSummary();
 
 q('#water').onclick=()=>{plant.style.transform='translateX(-50%) scale(1.08)';setTimeout(()=>plant.style.transform='translateX(-50%)',450);msg.textContent='물을 천천히 마시고 있어요.'};q('#leaf').onclick=()=>{plant.style.filter='drop-shadow(0 12px 7px #0002) brightness(1.18)';setTimeout(()=>plant.style.filter='',700);msg.textContent='잎이 반짝반짝 깨끗해졌어요.'};const roomPhoto=q('#roomPhoto');function applyRoomPhoto(data){roomPhoto.src=data;room.classList.add('has-photo');room.style.backgroundImage='none'}q('#photo').onchange=e=>{let f=e.target.files[0];if(!f)return;let r=new FileReader;r.onload=()=>{applyRoomPhoto(r.result);try{localStorage.room=r.result}catch(_){}};r.readAsDataURL(f)};try{if(localStorage.room)applyRoomPhoto(localStorage.room)}catch(_){};
 
@@ -109,5 +232,75 @@ photo.addEventListener('change',e=>{let f=e.target.files[0];if(!f)return;compres
 virtual.querySelectorAll('button').forEach(b=>b.onclick=()=>{virtualId=b.dataset.v;virtual.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b))});
 q('#savePlant').onclick=()=>{if(!name.value.trim()||!place.value.trim())return alert('식물 이름과 장소를 입력해 주세요.');if(imageMode==='mine'&&!pendingImage)return alert('내 이미지를 선택해 주세요.');if(imageMode==='virtual'&&!virtualId)return alert('가상 이미지를 선택해 주세요.');const added={name:name.value.trim(),place:place.value.trim(),live:live.checked,image:imageMode==='mine'?pendingImage:'',virtual:imageMode==='virtual'?virtualId:''};plants.push(added);try{localStorage.myPlants=JSON.stringify(plants)}catch(_){plants.pop();alert('저장 공간이 부족합니다. 사진을 더 압축해 다시 시도해 주세요.');return}if(added.image){const rp=q('#roomPhoto');rp.src=added.image;room.classList.add('has-photo');room.style.backgroundImage='none';room.style.background='';}else{q('#roomPhoto').removeAttribute('src');room.classList.remove('has-photo');room.style.background=bgFor(added.virtual)};room.dataset.live=added.live?'1':'0';name.value='';place.value='';pendingImage='';virtualId='';add.classList.remove('open');render();home.classList.remove('open')};
 render()})();
-;(()=>{['click','dblclick','contextmenu'].forEach(t=>{plant.addEventListener(t,e=>{if(!editing){e.preventDefault();e.stopPropagation()}},true);roomPhoto.addEventListener(t,e=>{if(!editing){e.preventDefault();e.stopPropagation()}},true)});})();
 ;(()=>{['click','dblclick','contextmenu'].forEach(t=>{plant.addEventListener(t,e=>{if(!room.classList.contains('editing')){e.preventDefault();e.stopPropagation()}},true);roomPhoto.addEventListener(t,e=>{if(!room.classList.contains('editing')){e.preventDefault();e.stopPropagation()}},true)});})();
+;(()=>{['click','dblclick','contextmenu'].forEach(t=>{plant.addEventListener(t,e=>{if(!room.classList.contains('editing')){e.preventDefault();e.stopPropagation()}},true);roomPhoto.addEventListener(t,e=>{if(!room.classList.contains('editing')){e.preventDefault();e.stopPropagation()}},true)});})();
+
+;(()=>{ 
+  const collection=q('#collectionList'),codex=q('#codexList'),shop=q('#shopList'),home=q('#homeSheet');
+  function owned(type,id){
+    const key=type==='species'?'species':type==='pots'?'pots':'scenes';
+    return meta.inventory[key].includes(id);
+  }
+  function requirementText(item){
+    if(item.milestone==='week3')return '이번 주 3일 휴식 달성 시 해금';
+    if(item.milestone==='week7')return '이번 주 7일 휴식 달성 시 해금';
+    return '';
+  }
+  function renderCollection(){
+    if(!collection)return;
+    if(!meta.collection.length){collection.innerHTML='<p class="emptyState">아직 완성한 식물이 없습니다. 60분의 햇살 휴식을 채워 첫 식물을 완성해 보세요.</p>';return}
+    collection.innerHTML=meta.collection.map(x=>{
+      const sp=catalogItem('species',x.species),d=new Date(x.completedAt);
+      return '<article class="collectionCard"><div class="collectionIcon">'+sp.icon+'</div><div><strong>'+sp.name+'</strong><small>'+d.toLocaleDateString('ko-KR')+' 완성 · 공개 안 함</small></div><span>완성</span></article>'
+    }).join('');
+  }
+  function renderCodex(){
+    if(!codex)return;
+    codex.innerHTML=CATALOG.species.map(sp=>{
+      const count=meta.codex[sp.id]||0,has=meta.inventory.species.includes(sp.id);
+      return '<article class="codexCard '+(has?'':'locked')+'"><div class="codexIcon">'+(has?sp.icon:'?')+'</div><div><strong>'+(has?sp.name:'미발견 식물')+'</strong><small>'+(has?('완성 '+count+'회'):(requirementText(sp)||'상점에서 해금'))+'</small></div><b>'+count+'/3</b></article>'
+    }).join('');
+  }
+  function buyOrUse(type,item){
+    const invKey=type==='species'?'species':type==='pots'?'pots':'scenes';
+    const activeKey=type==='species'?'species':type==='pots'?'pot':'scene';
+    const has=meta.inventory[invKey].includes(item.id);
+    if(!has){
+      if(item.milestone){showReward(requirementText(item));return}
+      if(meta.points<(item.price||0)){showReward('햇살 포인트가 부족해요');return}
+      meta.points-=item.price||0;meta.inventory[invKey].push(item.id);
+      showReward(item.name+' 해금');
+    }
+    meta.active[activeKey]=item.id;saveMeta();applyCosmetics();refreshMetaSummary();renderShop();
+    if(type==='scenes'&&!room.classList.contains('has-photo'))room.style.background='';
+  }
+  function renderShopGroup(title,type,items){
+    const invKey=type==='species'?'species':type==='pots'?'pots':'scenes',activeKey=type==='species'?'species':type==='pots'?'pot':'scene';
+    return '<section class="shopGroup"><h3>'+title+'</h3>'+items.map(item=>{
+      const has=meta.inventory[invKey].includes(item.id),active=meta.active[activeKey]===item.id;
+      let label=active?'사용 중':has?'사용하기':item.milestone?'조건 해금':(item.price+'P');
+      return '<button class="shopItem '+(active?'active':'')+'" data-shop-type="'+type+'" data-shop-id="'+item.id+'"><span>'+item.icon+'</span><div><strong>'+item.name+'</strong><small>'+(has?'보유 중':(requirementText(item)||(item.price+'P로 해금')))+'</small></div><b>'+label+'</b></button>'
+    }).join('')+'</section>';
+  }
+  function renderShop(){
+    if(!shop)return;
+    shop.innerHTML=renderShopGroup('식물 씨앗','species',CATALOG.species)+renderShopGroup('화분','pots',CATALOG.pots)+renderShopGroup('정원 배경','scenes',CATALOG.scenes);
+    shop.querySelectorAll('[data-shop-id]').forEach(b=>b.onclick=()=>{
+      const type=b.dataset.shopType,id=b.dataset.shopId,list=type==='species'?CATALOG.species:type==='pots'?CATALOG.pots:CATALOG.scenes;
+      buyOrUse(type,list.find(x=>x.id===id));
+    });
+  }
+  window.renderGardenRewards=()=>{renderCollection();renderCodex();renderShop();refreshMetaSummary()};
+  document.querySelectorAll('[data-garden-tab]').forEach(btn=>btn.onclick=()=>{
+    document.querySelectorAll('[data-garden-tab]').forEach(x=>x.classList.toggle('on',x===btn));
+    document.querySelectorAll('[data-garden-panel]').forEach(p=>p.classList.toggle('on',p.dataset.gardenPanel===btn.dataset.gardenTab));
+    renderGardenRewards();
+  });
+  const existingOpen=q('#myHome').onclick;
+  q('#myHome').onclick=()=>{existingOpen&&existingOpen();renderGardenRewards()};
+  q('#openCodex').onclick=()=>{
+    q('#myHome').click();
+    const btn=document.querySelector('[data-garden-tab="codex"]');btn&&btn.click();
+  };
+  renderGardenRewards();
+})();
