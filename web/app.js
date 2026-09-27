@@ -1,11 +1,15 @@
 const q=s=>document.querySelector(s),room=q('#room'),plant=q('#plant'),time=q('#time'),stage=q('#stage'),rest=q('#rest'),msg=q('#msg'),bar=q('#bar'),next=q('#next');let total=+(localStorage.sun||0),running=false,start=0;function draw(){let t=total+(running?Date.now()-start:0),m=Math.floor(t/60000),s=Math.floor(t/1000)%60;time.textContent=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');let data=m>=60?['나무',60]:m>=30?['화분',60]:m>=10?['잎',30]:['새싹',10];stage.textContent=data[0];plant.style.transform='translateX(-50%) scale('+(1+Math.min(m,60)/300)+')';bar.style.width=Math.min(100,m/data[1]*100)+'%';next.textContent=m>=60?'오늘의 광합성 완료':('다음 성장까지 '+(data[1]-m)+'분')}setInterval(draw,1000);draw();rest.onclick=()=>{if(!running){running=true;start=Date.now();rest.textContent='휴식 종료';room.classList.add('active');msg.textContent='광합성 중이에요. 이제 화면을 내려놓아도 좋아요.'}else{total+=Date.now()-start;localStorage.sun=total;running=false;rest.textContent='햇살 휴식 시작';room.classList.remove('active');msg.textContent='잘 쉬었어요. 식물이 조금 더 자랐습니다.'}draw()};q('#water').onclick=()=>{plant.style.transform='translateX(-50%) scale(1.08)';setTimeout(()=>plant.style.transform='translateX(-50%)',450);msg.textContent='물을 천천히 마시고 있어요.'};q('#leaf').onclick=()=>{plant.style.filter='drop-shadow(0 12px 7px #0002) brightness(1.18)';setTimeout(()=>plant.style.filter='',700);msg.textContent='잎이 반짝반짝 깨끗해졌어요.'};q('#photo').onchange=e=>{let f=e.target.files[0];if(!f)return;let r=new FileReader;r.onload=()=>{room.style.backgroundImage='url('+r.result+')';try{localStorage.room=r.result}catch(_){ }};r.readAsDataURL(f)};try{if(localStorage.room){room.style.backgroundImage='url('+localStorage.room+')';}}catch(_){};
-;(()=>{let x=+(localStorage.plantX||50),y=+(localStorage.plantY||78),size=+(localStorage.plantSize||130),drag=false,ox=0,oy=0;
-function place(){plant.style.left=x+'%';plant.style.top=y+'%';plant.style.bottom='auto';plant.style.width=size+'px';plant.style.height=(size*1.31)+'px';plant.style.transform='translate(-50%,-50%)';}
-function save(){localStorage.plantX=x;localStorage.plantY=y;localStorage.plantSize=size}
-function point(e){let r=room.getBoundingClientRect(),p=e.touches?e.touches[0]:e;return{x:(p.clientX-r.left)/r.width*100,y:(p.clientY-r.top)/r.height*100}}
-plant.addEventListener('pointerdown',e=>{drag=true;plant.classList.add('dragging');plant.setPointerCapture(e.pointerId);let p=point(e);ox=p.x-x;oy=p.y-y;e.preventDefault()});
-plant.addEventListener('pointermove',e=>{if(!drag)return;let p=point(e);x=Math.max(8,Math.min(92,p.x-ox));y=Math.max(15,Math.min(90,p.y-oy));place()});
-plant.addEventListener('pointerup',e=>{drag=false;plant.classList.remove('dragging');save()});
-q('#plantMinus').onclick=()=>{size=Math.max(70,size-10);place();save()};
-q('#plantPlus').onclick=()=>{size=Math.min(230,size+10);place();save()};
+
+;(()=>{let x=parseFloat(localStorage.plantX)||50,y=parseFloat(localStorage.plantY)||72,size=parseFloat(localStorage.plantSize)||130,drag=false,pid=null;
+const tools=q('#plantTools'),minus=q('#plantMinus'),plus=q('#plantPlus');
+function place(){plant.style.setProperty('left',x+'%','important');plant.style.setProperty('top',y+'%','important');plant.style.setProperty('bottom','auto','important');plant.style.setProperty('width',size+'px','important');plant.style.setProperty('height',(size*1.31)+'px','important');plant.style.setProperty('transform','translate(-50%,-50%)','important')}
+function save(){localStorage.setItem('plantX',x);localStorage.setItem('plantY',y);localStorage.setItem('plantSize',size)}
+function pt(e){const r=room.getBoundingClientRect();return{x:(e.clientX-r.left)/r.width*100,y:(e.clientY-r.top)/r.height*100}}
+plant.addEventListener('pointerdown',e=>{if(e.button!==undefined&&e.button!==0)return;drag=true;pid=e.pointerId;plant.classList.add('dragging');try{plant.setPointerCapture(pid)}catch(_){};e.preventDefault()});
+plant.addEventListener('pointermove',e=>{if(!drag||e.pointerId!==pid)return;const p=pt(e);x=Math.max(5,Math.min(95,p.x));y=Math.max(10,Math.min(92,p.y));place();e.preventDefault()});
+function end(e){if(!drag)return;drag=false;pid=null;plant.classList.remove('dragging');save();e.preventDefault()}
+plant.addEventListener('pointerup',end);plant.addEventListener('pointercancel',end);
+function resize(delta,e){if(e){e.preventDefault();e.stopPropagation()}size=Math.max(60,Math.min(260,size+delta));place();save()}
+minus.addEventListener('pointerdown',e=>resize(-15,e));plus.addEventListener('pointerdown',e=>resize(15,e));
+tools.addEventListener('pointerdown',e=>e.stopPropagation());
 place()})();
