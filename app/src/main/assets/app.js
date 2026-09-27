@@ -1,14 +1,13 @@
 const q=s=>document.querySelector(s),room=q('#room'),plant=q('#plant'),time=q('#time'),stage=q('#stage'),rest=q('#rest'),msg=q('#msg'),bar=q('#bar'),next=q('#next');
 const harvest=q('#harvest'),sunPoints=q('#sunPoints'),completedPlants=q('#completedPlants'),activePlantName=q('#activePlantName');
-const MIN=60000,GROWTH_TARGET=60*MIN,META_KEY='mindGardenMetaV1';
+const MIN=60000,META_KEY='mindGardenMetaV1';
 
 const CATALOG={
   species:[
-    {id:'monstera',name:'몬스테라',icon:'🌿',price:0},
-    {id:'rubber',name:'고무나무',icon:'🌱',price:60},
-    {id:'olive',name:'올리브나무',icon:'🫒',price:120},
-    {id:'fern',name:'보스턴고사리',icon:'🌿',price:160},
-    {id:'lavender',name:'라벤더',icon:'🪻',milestone:'week7'}
+    {id:'calendula',name:'금잔화',icon:'🟠',seedPrice:40,growthMinutes:90,reward:120,difficulty:'쉬움',season:'9월 추천'},
+    {id:'cornflower',name:'수레국화',icon:'🔵',seedPrice:60,growthMinutes:120,reward:150,difficulty:'보통',season:'9월 추천'},
+    {id:'pansy',name:'팬지',icon:'🟣',seedPrice:80,growthMinutes:150,reward:180,difficulty:'보통+',season:'9월~초10월'},
+    {id:'nigella',name:'니겔라',icon:'💠',seedPrice:100,growthMinutes:180,reward:220,difficulty:'어려움',season:'9월 추천'}
   ],
   pots:[
     {id:'ivory',name:'아이보리 화분',icon:'◯',price:0},
@@ -33,13 +32,14 @@ function weekKey(d=new Date()){
 }
 function defaultMeta(){
   return {
-    schemaVersion:1,
+    schemaVersion:2,
     points:0,
     completedCount:0,
     codex:{},
     collection:[],
-    inventory:{species:['monstera'],pots:['ivory'],scenes:['window']},
-    active:{species:'monstera',pot:'ivory',scene:'window'},
+    seedCounts:{calendula:1,cornflower:0,pansy:0,nigella:0},
+    inventory:{species:[],pots:['ivory'],scenes:['window']},
+    active:{species:'calendula',pot:'ivory',scene:'window',planted:false},
     dailyFocus:{},
     week:{key:weekKey(),days:[],bonus3:false,bonus7:false},
     lastDailyCompletionBonus:'',
@@ -53,6 +53,7 @@ function loadMeta(){
     if(saved&&typeof saved==='object'){
       m={...m,...saved};
       m.inventory={...m.inventory,...(saved.inventory||{})};
+      m.seedCounts={...m.seedCounts,...(saved.seedCounts||{})};
       m.active={...m.active,...(saved.active||{})};
       m.social={...m.social,...(saved.social||{})};
       m.codex=saved.codex||{};
@@ -62,6 +63,9 @@ function loadMeta(){
     }
   }catch(_){}
   if(m.week.key!==weekKey())m.week={key:weekKey(),days:[],bonus3:false,bonus7:false};
+  if(!CATALOG.species.some(x=>x.id===m.active.species))m.active.species='calendula';
+  if(typeof m.active.planted!=='boolean')m.active.planted=true;
+  m.schemaVersion=2;
   return m;
 }
 let meta=loadMeta(),total=+(localStorage.sun||0),running=false,start=0,wakeLock=null;
@@ -69,12 +73,77 @@ let meta=loadMeta(),total=+(localStorage.sun||0),running=false,start=0,wakeLock=
 function saveMeta(){localStorage.setItem(META_KEY,JSON.stringify(meta))}
 function catalogItem(type,id){return CATALOG[type].find(x=>x.id===id)||CATALOG[type][0]}
 function activeSpecies(){return catalogItem('species',meta.active.species)}
+function growthTargetMs(){return activeSpecies().growthMinutes*MIN}
+function stageInfo(ratio){
+  if(!meta.active.planted)return {name:'씨앗 대기',key:'empty'};
+  if(ratio<.08)return {name:'씨앗',key:'seed'};
+  if(ratio<.22)return {name:'발아',key:'germination'};
+  if(ratio<.45)return {name:'새싹',key:'sprout'};
+  if(ratio<.72)return {name:'본잎',key:'leaves'};
+  if(ratio<1)return {name:'봉오리',key:'bud'};
+  return {name:'개화',key:'bloom'};
+}
+function petalRing(count,rx,ry,dist,fill){
+  let out='<g fill="'+fill+'">';
+  for(let i=0;i<count;i++)out+='<ellipse rx="'+rx+'" ry="'+ry+'" transform="rotate('+(i*360/count)+') translate(0 -'+dist+')"/>';
+  return out+'</g>';
+}
+function potBase(){
+  return '<ellipse cx="90" cy="207" rx="52" ry="8" fill="#000" opacity=".12"/><path d="M50 150h80l-8 51c-1 6-7 9-14 9H72c-7 0-13-3-14-9z" fill="#ece5d8"/><ellipse cx="90" cy="150" rx="40" ry="10" fill="#f7f0e4"/><ellipse cx="90" cy="150" rx="33" ry="7" fill="#493726"/>';
+}
+function flowerSVG(id,key){
+  const pot=potBase();
+  if(key==='empty')return '<svg viewBox="0 0 180 220" role="img">'+pot+'</svg>';
+  const seeds={
+    calendula:'<path d="M84 146c9-8 18-3 12 5-5 6-13 5-12-5z" fill="#c6a35f" stroke="#84682f" stroke-width="2"/>',
+    cornflower:'<ellipse cx="90" cy="146" rx="5" ry="8" fill="#b9a36c"/><path d="M90 138l-5-7m5 7v-9m0 9l5-7" stroke="#d9d1ad" stroke-width="1.4"/>',
+    pansy:'<ellipse cx="90" cy="146" rx="4.5" ry="5.5" fill="#6d4a2a"/>',
+    nigella:'<path d="M85 149l3-8 7 2 1 7-6 4z" fill="#181818"/>'
+  };
+  if(key==='seed')return '<svg viewBox="0 0 180 220" role="img">'+pot+seeds[id]+'</svg>';
+  if(key==='germination')return '<svg viewBox="0 0 180 220" role="img">'+pot+'<path d="M90 150c0-10 0-15 2-22" stroke="#6f9d4f" stroke-width="4" fill="none"/><path d="M92 130c-9-1-12-6-12-11 8-2 13 2 12 11z" fill="#91bf6d"/></svg>';
+  const stem='<path d="M90 150C90 132 91 111 90 91" fill="none" stroke="#4d7f3b" stroke-width="5" stroke-linecap="round"/>';
+  const cot='<path d="M90 132C77 131 71 123 71 114c12-2 20 4 19 18z" fill="#77ad58"/><path d="M91 128c3-11 11-17 21-16 0 11-7 18-21 16z" fill="#8abc65"/>';
+  if(key==='sprout')return '<svg viewBox="0 0 180 220" role="img">'+pot+stem+cot+'</svg>';
+  let leaves='',bud='',flower='';
+  if(id==='calendula'){
+    leaves='<path d="M90 124C70 121 65 110 68 101c16 1 23 9 22 23zM91 110c12-13 24-14 31-8-6 12-17 15-31 8z" fill="#6d9a50"/>';
+    bud='<circle cx="90" cy="87" r="8" fill="#76a44e"/>';
+    flower='<g transform="translate(90 82)">'+petalRing(14,6,18,13,'#ed9c2b')+'<circle r="10" fill="#7f5422"/><circle r="5" fill="#c77a19"/></g>';
+  }else if(id==='cornflower'){
+    leaves='<path d="M90 128c-12-10-18-20-15-29 10 4 15 13 15 29zM92 118c9-14 17-19 24-17-3 11-10 17-24 17z" fill="#789a78"/>';
+    bud='<path d="M82 91q8-13 16 0l-2 8H84z" fill="#607c58"/>';
+    flower='<g transform="translate(90 80)" fill="#477dcc">';
+    for(let i=0;i<12;i++)flower+='<path d="M0 0 L-5 -24 L0 -19 L5 -24 Z" transform="rotate('+(i*30)+')"/>';
+    flower+='<circle r="7" fill="#34538a"/></g>';
+  }else if(id==='pansy'){
+    leaves='<ellipse cx="76" cy="120" rx="17" ry="9" transform="rotate(-22 76 120)" fill="#668d49"/><ellipse cx="104" cy="116" rx="18" ry="10" transform="rotate(24 104 116)" fill="#739c52"/>';
+    bud='<ellipse cx="90" cy="88" rx="8" ry="11" fill="#694d83"/>';
+    flower='<g transform="translate(90 82)"><ellipse cx="-11" cy="-5" rx="15" ry="19" fill="#76519c"/><ellipse cx="11" cy="-5" rx="15" ry="19" fill="#76519c"/><ellipse cx="-10" cy="12" rx="14" ry="17" fill="#8b68ad"/><ellipse cx="10" cy="12" rx="14" ry="17" fill="#8b68ad"/><ellipse cy="17" rx="13" ry="17" fill="#f0c84f"/><path d="M-8 5L0 14 8 5M0 14v10" stroke="#4a315f" stroke-width="4" fill="none"/></g>';
+  }else{
+    leaves='<g stroke="#56805c" stroke-width="2" stroke-linecap="round"><path d="M90 134l-22-22m22 10l21-27m-20 19l-18-27m18 18l23-20"/><path d="M73 112l-10-2m10 2l-4-10m31-2l10-5m-10 5l3-11m-26 1l-8-8m8 8l2-12"/></g>';
+    bud='<path d="M84 92q6-14 12 0l-1 8H85z" fill="#5b8060"/>';
+    flower='<g transform="translate(90 80)">'+petalRing(8,7,21,9,'#9cc9dd')+'<circle r="8" fill="#527a83"/>';
+    for(let i=0;i<10;i++)flower+='<path d="M0 0v-13" transform="rotate('+(i*36)+')" stroke="#385e50" stroke-width="1"/>';
+    flower+='</g>';
+  }
+  return '<svg viewBox="0 0 180 220" role="img">'+pot+stem+cot+leaves+(key==='leaves'?'':(key==='bud'?bud:flower))+'</svg>';
+}
+function renderPlantVisual(ratio){
+  const sp=activeSpecies(),st=stageInfo(ratio);
+  plant.innerHTML=flowerSVG(sp.id,st.key);
+  plant.dataset.species=sp.id;
+  plant.dataset.pot=meta.active.pot;
+  stage.textContent=st.name;
+}
 function applyCosmetics(){
   const sp=activeSpecies();
   plant.dataset.species=sp.id;
   plant.dataset.pot=meta.active.pot;
   room.dataset.scene=meta.active.scene;
-  activePlantName.textContent=sp.icon+' '+sp.name+' 키우는 중';
+  activePlantName.textContent=meta.active.planted
+    ?sp.icon+' '+sp.name+' · '+sp.difficulty+' · '+sp.growthMinutes+'분'
+    :'씨앗을 선택해 심어주세요';
 }
 function refreshMetaSummary(){
   sunPoints.textContent=meta.points.toLocaleString()+'P';
@@ -97,8 +166,8 @@ function unlockWeeklyRewards(){
   }
   if(n>=7&&!meta.week.bonus7){
     meta.week.bonus7=true;
-    if(!meta.inventory.species.includes('lavender'))meta.inventory.species.push('lavender');
-    showReward('이번 주 7일 달성 · 라벤더 씨앗 해금');
+    meta.seedCounts.pansy=(meta.seedCounts.pansy||0)+1;
+    showReward('이번 주 7일 달성 · 팬지 씨앗 1개 선물');
   }
 }
 function recordFocus(ms){
@@ -111,18 +180,22 @@ function recordFocus(ms){
   saveMeta();
 }
 function draw(){
-  let t=total+(running?Date.now()-start:0),m=Math.floor(t/MIN),s=Math.floor(t/1000)%60;
-  time.textContent=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
-  let data=m>=60?['완성',60]:m>=30?['화분',60]:m>=10?['잎',30]:['새싹',10];
-  stage.textContent=data[0];
-  plant.style.transform='translateX(-50%) scale('+(1+Math.min(m,60)/300)+')';
-  bar.style.width=Math.min(100,m/60*100)+'%';
-  if(m>=60){
-    next.textContent='완성됐어요. 수확하면 햇살 포인트를 받아요.';
-    harvest.hidden=false;
+  let t=total+(running?Date.now()-start:0),m=Math.floor(t/MIN),sec=Math.floor(t/1000)%60;
+  const target=activeSpecies().growthMinutes,ratio=meta.active.planted?Math.min(1,t/(target*MIN)):0;
+  time.textContent=String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');
+  renderPlantVisual(ratio);
+  plant.style.transform='translateX(-50%) scale('+(1+ratio*.2)+')';
+  bar.style.width=(ratio*100)+'%';
+  if(!meta.active.planted){
+    next.textContent='상점에서 씨앗을 구매하고 심어주세요.';
+    harvest.hidden=true;rest.disabled=true;
+  }else if(ratio>=1){
+    next.textContent='꽃이 활짝 폈어요. 수확하면 햇살 포인트를 받아요.';
+    harvest.textContent='꽃 수확하기 · +'+activeSpecies().reward+'P';
+    harvest.hidden=false;rest.disabled=true;
   }else{
-    next.textContent='완성까지 '+(60-m)+'분';
-    harvest.hidden=true;
+    next.textContent='개화까지 '+Math.max(0,target-m)+'분 · '+activeSpecies().difficulty;
+    harvest.hidden=true;rest.disabled=false;
   }
 }
 setInterval(draw,1000);draw();
@@ -137,7 +210,8 @@ async function setScreenAwake(on){
   }catch(_){wakeLock=null}
 }
 function startRest(){
-  if(running||total>=GROWTH_TARGET)return;
+  if(!meta.active.planted){showReward('먼저 꽃 씨앗을 심어주세요');return}
+  if(running||total>=growthTargetMs())return;
   running=true;start=Date.now();rest.textContent='휴식 종료';room.classList.add('active');
   msg.textContent='광합성 중이에요. 화면은 켜진 상태로 유지됩니다.';
   setScreenAwake(true);draw();
@@ -152,9 +226,10 @@ function stopRest(reason='manual'){
 }
 function harvestPlant(){
   if(running)stopRest('manual');
-  if(total<GROWTH_TARGET)return;
-  const sp=activeSpecies(),today=localDateKey();
-  let reward=100;
+  const sp=activeSpecies();
+  if(total<growthTargetMs())return;
+  const today=localDateKey();
+  let reward=sp.reward;
   if(meta.lastDailyCompletionBonus!==today){reward+=20;meta.lastDailyCompletionBonus=today}
   meta.points+=reward;meta.completedCount+=1;
   meta.codex[sp.id]=(meta.codex[sp.id]||0)+1;
@@ -163,11 +238,12 @@ function harvestPlant(){
     species:sp.id,
     speciesName:sp.name,
     completedAt:new Date().toISOString(),
-    focusMinutes:60,
+    focusMinutes:sp.growthMinutes,
     visibility:'private',
     shareId:null
   });
-  total=Math.max(0,total-GROWTH_TARGET);localStorage.sun=total;
+  total=0;localStorage.sun=0;
+  meta.active.planted=false;
   saveMeta();refreshMetaSummary();applyCosmetics();renderGardenRewards();
   showReward(sp.name+' 완성 · +'+reward+'P');
   msg.textContent=reward>100?'오늘 첫 완성 보너스까지 받았어요.':'완성한 식물이 내 정원에 보관됐어요.';
@@ -236,57 +312,75 @@ render()})();
 ;(()=>{['click','dblclick','contextmenu'].forEach(t=>{plant.addEventListener(t,e=>{if(!room.classList.contains('editing')){e.preventDefault();e.stopPropagation()}},true);roomPhoto.addEventListener(t,e=>{if(!room.classList.contains('editing')){e.preventDefault();e.stopPropagation()}},true)});})();
 
 ;(()=>{ 
-  const collection=q('#collectionList'),codex=q('#codexList'),shop=q('#shopList'),home=q('#homeSheet');
-  function owned(type,id){
-    const key=type==='species'?'species':type==='pots'?'pots':'scenes';
-    return meta.inventory[key].includes(id);
-  }
-  function requirementText(item){
-    if(item.milestone==='week3')return '이번 주 3일 휴식 달성 시 해금';
-    if(item.milestone==='week7')return '이번 주 7일 휴식 달성 시 해금';
-    return '';
-  }
+  const collection=q('#collectionList'),codex=q('#codexList'),shop=q('#shopList');
   function renderCollection(){
     if(!collection)return;
-    if(!meta.collection.length){collection.innerHTML='<p class="emptyState">아직 완성한 식물이 없습니다. 60분의 햇살 휴식을 채워 첫 식물을 완성해 보세요.</p>';return}
+    if(!meta.collection.length){collection.innerHTML='<p class="emptyState">아직 완성한 꽃이 없습니다. 씨앗을 심고 햇살 휴식으로 꽃을 피워보세요.</p>';return}
     collection.innerHTML=meta.collection.map(x=>{
-      const sp=catalogItem('species',x.species),d=new Date(x.completedAt);
-      return '<article class="collectionCard"><div class="collectionIcon">'+sp.icon+'</div><div><strong>'+sp.name+'</strong><small>'+d.toLocaleDateString('ko-KR')+' 완성 · 공개 안 함</small></div><span>완성</span></article>'
+      let sp=CATALOG.species.find(y=>y.id===x.species);if(!sp)sp={icon:'🪴',name:x.speciesName||'이전 식물',growthMinutes:x.focusMinutes||60};const d=new Date(x.completedAt);
+      return '<article class="collectionCard"><div class="collectionIcon">'+sp.icon+'</div><div><strong>'+sp.name+'</strong><small>'+d.toLocaleDateString('ko-KR')+' 완성 · '+(x.focusMinutes||sp.growthMinutes)+'분 · 공개 안 함</small></div><span>완성</span></article>'
     }).join('');
   }
   function renderCodex(){
     if(!codex)return;
     codex.innerHTML=CATALOG.species.map(sp=>{
-      const count=meta.codex[sp.id]||0,has=meta.inventory.species.includes(sp.id);
-      return '<article class="codexCard '+(has?'':'locked')+'"><div class="codexIcon">'+(has?sp.icon:'?')+'</div><div><strong>'+(has?sp.name:'미발견 식물')+'</strong><small>'+(has?('완성 '+count+'회'):(requirementText(sp)||'상점에서 해금'))+'</small></div><b>'+count+'/3</b></article>'
+      const count=meta.codex[sp.id]||0;
+      return '<article class="codexCard"><div class="codexIcon">'+sp.icon+'</div><div><strong>'+sp.name+'</strong><small>'+sp.season+' · '+sp.difficulty+' · '+sp.growthMinutes+'분 · 완성 '+count+'회</small></div><b>'+count+'/3</b></article>'
     }).join('');
   }
+  function buySeed(id){
+    const sp=catalogItem('species',id);
+    if(meta.points<sp.seedPrice){showReward('햇살 포인트가 부족해요');return}
+    meta.points-=sp.seedPrice;
+    meta.seedCounts[id]=(meta.seedCounts[id]||0)+1;
+    saveMeta();refreshMetaSummary();renderShop();
+    showReward(sp.name+' 씨앗 1개 구매');
+  }
+  function plantSeed(id){
+    if(running){showReward('햇살 휴식을 먼저 종료해 주세요');return}
+    if(meta.active.planted||total>0){showReward('현재 꽃을 먼저 완성해 주세요');return}
+    if((meta.seedCounts[id]||0)<1){showReward('먼저 씨앗을 구매해 주세요');return}
+    meta.seedCounts[id]-=1;
+    meta.active.species=id;
+    meta.active.planted=true;
+    total=0;localStorage.sun=0;
+    saveMeta();applyCosmetics();renderShop();draw();
+    showReward(catalogItem('species',id).name+' 씨앗을 심었어요');
+  }
   function buyOrUse(type,item){
-    const invKey=type==='species'?'species':type==='pots'?'pots':'scenes';
-    const activeKey=type==='species'?'species':type==='pots'?'pot':'scene';
+    const invKey=type==='pots'?'pots':'scenes';
+    const activeKey=type==='pots'?'pot':'scene';
     const has=meta.inventory[invKey].includes(item.id);
     if(!has){
-      if(item.milestone){showReward(requirementText(item));return}
+      if(item.milestone){showReward(item.milestone==='week3'?'이번 주 3일 휴식 달성 시 해금':'조건을 달성하면 해금됩니다');return}
       if(meta.points<(item.price||0)){showReward('햇살 포인트가 부족해요');return}
-      meta.points-=item.price||0;meta.inventory[invKey].push(item.id);
-      showReward(item.name+' 해금');
+      meta.points-=item.price||0;meta.inventory[invKey].push(item.id);showReward(item.name+' 해금');
     }
     meta.active[activeKey]=item.id;saveMeta();applyCosmetics();refreshMetaSummary();renderShop();
     if(type==='scenes'&&!room.classList.contains('has-photo'))room.style.background='';
   }
+  function renderSeedShop(){
+    return '<section class="shopGroup"><h3>9월 꽃 씨앗</h3><p class="seedNote">씨앗 → 발아 → 새싹 → 본잎 → 봉오리 → 개화 순서로 자랍니다. 앱의 성장시간은 휴식 습관용으로 실제 생육기간을 압축한 시간입니다.</p>'+
+      CATALOG.species.map(sp=>{
+        const count=meta.seedCounts[sp.id]||0,active=meta.active.planted&&meta.active.species===sp.id;
+        return '<article class="seedShopItem '+(active?'active':'')+'"><div class="seedPreview">'+flowerSVG(sp.id,'seed')+'</div><div class="seedInfo"><strong>'+sp.name+'</strong><small>'+sp.season+' · '+sp.difficulty+' · 개화 '+sp.growthMinutes+'분</small><em>보유 씨앗 '+count+'개 · 완성 보상 '+sp.reward+'P</em></div><div class="seedActions"><button data-buy-seed="'+sp.id+'">'+sp.seedPrice+'P 구매</button><button data-plant-seed="'+sp.id+'" '+(count<1||meta.active.planted?'disabled':'')+'>심기</button></div></article>'
+      }).join('')+'</section>';
+  }
   function renderShopGroup(title,type,items){
-    const invKey=type==='species'?'species':type==='pots'?'pots':'scenes',activeKey=type==='species'?'species':type==='pots'?'pot':'scene';
+    const invKey=type==='pots'?'pots':'scenes',activeKey=type==='pots'?'pot':'scene';
     return '<section class="shopGroup"><h3>'+title+'</h3>'+items.map(item=>{
       const has=meta.inventory[invKey].includes(item.id),active=meta.active[activeKey]===item.id;
       let label=active?'사용 중':has?'사용하기':item.milestone?'조건 해금':(item.price+'P');
-      return '<button class="shopItem '+(active?'active':'')+'" data-shop-type="'+type+'" data-shop-id="'+item.id+'"><span>'+item.icon+'</span><div><strong>'+item.name+'</strong><small>'+(has?'보유 중':(requirementText(item)||(item.price+'P로 해금')))+'</small></div><b>'+label+'</b></button>'
+      return '<button class="shopItem '+(active?'active':'')+'" data-shop-type="'+type+'" data-shop-id="'+item.id+'"><span>'+item.icon+'</span><div><strong>'+item.name+'</strong><small>'+(has?'보유 중':(item.milestone==='week3'?'이번 주 3일 휴식 달성':(item.price+'P로 해금')))+'</small></div><b>'+label+'</b></button>'
     }).join('')+'</section>';
   }
   function renderShop(){
     if(!shop)return;
-    shop.innerHTML=renderShopGroup('식물 씨앗','species',CATALOG.species)+renderShopGroup('화분','pots',CATALOG.pots)+renderShopGroup('정원 배경','scenes',CATALOG.scenes);
+    shop.innerHTML=renderSeedShop()+renderShopGroup('화분','pots',CATALOG.pots)+renderShopGroup('정원 배경','scenes',CATALOG.scenes);
+    shop.querySelectorAll('[data-buy-seed]').forEach(b=>b.onclick=()=>buySeed(b.dataset.buySeed));
+    shop.querySelectorAll('[data-plant-seed]').forEach(b=>b.onclick=()=>plantSeed(b.dataset.plantSeed));
     shop.querySelectorAll('[data-shop-id]').forEach(b=>b.onclick=()=>{
-      const type=b.dataset.shopType,id=b.dataset.shopId,list=type==='species'?CATALOG.species:type==='pots'?CATALOG.pots:CATALOG.scenes;
+      const type=b.dataset.shopType,id=b.dataset.shopId,list=type==='pots'?CATALOG.pots:CATALOG.scenes;
       buyOrUse(type,list.find(x=>x.id===id));
     });
   }
@@ -303,4 +397,4 @@ render()})();
     const btn=document.querySelector('[data-garden-tab="codex"]');btn&&btn.click();
   };
   renderGardenRewards();
-})();
+})();;
