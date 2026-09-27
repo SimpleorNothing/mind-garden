@@ -158,6 +158,7 @@ function renderPlantVisual(ratio,elapsedMinutes){
   const image=sp.growthImages&&sp.growthImages[st.key];
   plant.innerHTML=image?'<img class="growthStageImage" src="'+image+'" alt="'+sp.name+' '+st.name+'" draggable="false">':flowerSVG(sp.id,st.key);
   plant.classList.toggle('photo-growth',Boolean(image));
+  plant.dataset.stage=st.key;
   plant.dataset.species=sp.id;
   plant.dataset.pot=meta.active.pot;
   stage.textContent=st.name;
