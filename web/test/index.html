@@ -86,7 +86,7 @@ const scene=document.querySelector('#scene'),sceneImage=document.querySelector('
 const flower=document.querySelector('#flowerOverlay'),flowerStage=document.querySelector('#overlayStage');
 flowerStage.replaceChildren(...stages.map(s=>{const option=document.createElement('option');option.value=s.key;option.textContent=s.name;return option}));
 flowerStage.value='bloom';flowerStage.onchange=updateFlower;
-function updateFlower(){const sp=catalog.find(x=>x.id===document.querySelector('#overlaySpecies').value),src=sp?.growthImages?.[flowerStage.value];if(!src){flower.hidden=true;return}flower.hidden=false;const cutout=sp.id==='calendula'&&flowerStage.value==='bloom';flower.classList.toggle('cutout',cutout);flower.src=cutout?'../assets/overlays/calendula-bloom.webp?v=20260928-3':'../'+src+'?v=20260928-2';flower.alt=sp.name+' '+stages.find(x=>x.key===flowerStage.value).name+' 이미지'}
+function updateFlower(){const sp=catalog.find(x=>x.id===document.querySelector('#overlaySpecies').value),src=sp?.growthImages?.[flowerStage.value];if(!src){flower.hidden=true;return}flower.hidden=false;const cutout=sp.id==='calendula';flower.classList.toggle('cutout',cutout);flower.src=cutout?'../assets/overlays/calendula-'+flowerStage.value+'.webp?v=20260928-4':'../'+src+'?v=20260928-2';flower.alt=sp.name+' '+stages.find(x=>x.key===flowerStage.value).name+' 이미지'}
 document.querySelector('#flowerSize').oninput=e=>{flower.style.width=e.target.value+'%'};
 document.querySelector('#resetFlower').onclick=()=>{flower.style.left='70%';flower.style.top='62%';flower.style.width='38%';document.querySelector('#flowerSize').value=38};
 let dragging=false,offsetX=0,offsetY=0;
