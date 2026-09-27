@@ -127,3 +127,5 @@
 #room.live-night.live-twilight #plant.photo-growth{filter:brightness(.8) saturate(.86)}
 #room.live-night #plant:not(.photo-growth) svg{filter:brightness(.64) saturate(.8)}
 #room.live-night.live-twilight #plant:not(.photo-growth) svg{filter:brightness(.82) saturate(.9)}
+
+.field select{display:block;width:100%;margin-top:6px;padding:12px;border:1px solid #dce2d8;border-radius:14px;background:#fff;font:inherit}
