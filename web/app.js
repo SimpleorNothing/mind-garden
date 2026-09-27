@@ -3,12 +3,7 @@ const harvest=q('#harvest'),sunPoints=q('#sunPoints'),completedPlants=q('#comple
 const MIN=60000,META_KEY='mindGardenMetaV1';
 
 const CATALOG={
-  species:[
-    {id:'calendula',name:'금잔화',icon:'🟠',seedPrice:40,growthMinutes:90,stageMinutes:[10,20,40,60,90],reward:120,difficulty:'쉬움',season:'9월 추천'},
-    {id:'cornflower',name:'수레국화',icon:'🔵',seedPrice:60,growthMinutes:120,stageMinutes:[10,30,50,90,120],reward:150,difficulty:'보통',season:'9월 추천'},
-    {id:'pansy',name:'팬지',icon:'🟣',seedPrice:80,growthMinutes:150,stageMinutes:[10,30,70,110,150],reward:180,difficulty:'보통+',season:'9월~초10월'},
-    {id:'nigella',name:'니겔라',icon:'💠',seedPrice:100,growthMinutes:180,stageMinutes:[10,40,80,130,180],reward:220,difficulty:'어려움',season:'9월 추천'}
-  ],
+  species:(window.MIND_GARDEN_FLOWERS&&window.MIND_GARDEN_FLOWERS.species)||[],
   pots:[
     {id:'ivory',name:'아이보리 화분',icon:'◯',price:0},
     {id:'clay',name:'테라코타 화분',icon:'🟤',price:100},
@@ -132,7 +127,8 @@ function flowerSVG(id,key){
 }
 function renderPlantVisual(ratio,elapsedMinutes){
   const sp=activeSpecies(),st=stageInfo(elapsedMinutes);
-  plant.innerHTML=flowerSVG(sp.id,st.key);
+  const image=sp.growthImages&&sp.growthImages[st.key];
+  plant.innerHTML=image?'<img class="growthStageImage" src="'+image+'" alt="'+sp.name+' '+st.name+'" draggable="false">':flowerSVG(sp.id,st.key);
   plant.dataset.species=sp.id;
   plant.dataset.pot=meta.active.pot;
   stage.textContent=st.name;
