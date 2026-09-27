@@ -338,7 +338,8 @@ render()})();
   }
   function plantSeed(id){
     if(running){showReward('햇살 휴식을 먼저 종료해 주세요');return}
-    if(meta.active.planted||total>0){showReward('현재 꽃을 먼저 완성해 주세요');return}
+    if(meta.active.planted){showReward('현재 꽃을 먼저 완성해 주세요');return}
+    if(total>0){total=0;localStorage.sun=0}
     if((meta.seedCounts[id]||0)<1){showReward('먼저 씨앗을 구매해 주세요');return}
     meta.seedCounts[id]-=1;
     meta.active.species=id;
