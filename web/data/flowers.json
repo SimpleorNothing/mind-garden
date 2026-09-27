@@ -26,6 +26,14 @@
         "leaves": "assets/growth/calendula/true_leaves.webp",
         "bud": "assets/growth/calendula/bud.webp",
         "bloom": "assets/growth/calendula/bloom.webp"
+      },
+      "overlayImages": {
+        "seed": "assets/overlays/calendula-seed.webp",
+        "germination": "assets/overlays/calendula-germination.webp",
+        "sprout": "assets/overlays/calendula-sprout.webp",
+        "leaves": "assets/overlays/calendula-leaves.webp",
+        "bud": "assets/overlays/calendula-bud.webp",
+        "bloom": "assets/overlays/calendula-bloom.webp"
       }
     },
     {
@@ -52,6 +60,14 @@
         "leaves": "assets/growth/cornflower/true_leaves.webp",
         "bud": "assets/growth/cornflower/bud.webp",
         "bloom": "assets/growth/cornflower/bloom.webp"
+      },
+      "overlayImages": {
+        "seed": "assets/overlays/cornflower-seed.webp",
+        "germination": "assets/overlays/cornflower-germination.webp",
+        "sprout": "assets/overlays/cornflower-sprout.webp",
+        "leaves": "assets/overlays/cornflower-leaves.webp",
+        "bud": "assets/overlays/cornflower-bud.webp",
+        "bloom": "assets/overlays/cornflower-bloom.webp"
       }
     },
     {
@@ -78,6 +94,14 @@
         "leaves": "assets/growth/pansy/true_leaves.webp",
         "bud": "assets/growth/pansy/bud.webp",
         "bloom": "assets/growth/pansy/bloom.webp"
+      },
+      "overlayImages": {
+        "seed": "assets/overlays/pansy-seed.webp",
+        "germination": "assets/overlays/pansy-germination.webp",
+        "sprout": "assets/overlays/pansy-sprout.webp",
+        "leaves": "assets/overlays/pansy-leaves.webp",
+        "bud": "assets/overlays/pansy-bud.webp",
+        "bloom": "assets/overlays/pansy-bloom.webp"
       }
     },
     {
@@ -104,6 +128,14 @@
         "leaves": "assets/growth/nigella/true_leaves.webp",
         "bud": "assets/growth/nigella/bud.webp",
         "bloom": "assets/growth/nigella/bloom.webp"
+      },
+      "overlayImages": {
+        "seed": "assets/overlays/nigella-seed.webp",
+        "germination": "assets/overlays/nigella-germination.webp",
+        "sprout": "assets/overlays/nigella-sprout.webp",
+        "leaves": "assets/overlays/nigella-leaves.webp",
+        "bud": "assets/overlays/nigella-bud.webp",
+        "bloom": "assets/overlays/nigella-bloom.webp"
       }
     }
   ]
