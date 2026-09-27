@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "updatedAt": "2026-09-27",
   "storage": "github",
   "backgrounds": [
@@ -15,7 +15,10 @@
       "name": "차분한 공부방 책상",
       "type": "virtual",
       "image": "assets/backgrounds/calm-study-desk.webp",
-      "source": "split-from-approved-virtual-scenes"
+      "source": "user-approved-collage-scene-2",
+      "width": 280,
+      "height": 503,
+      "sha256": "92739e520d34168b8d1c84ec3e9c000ae221d40c49d0225a7943a42520756685"
     },
     {
       "id": "green-veranda-garden",
