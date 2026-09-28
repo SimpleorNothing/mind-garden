@@ -3,7 +3,7 @@ android {
     namespace = "com.simpleornothing.mindgarden"
     compileSdk = 35
     defaultConfig {
-        applicationId = "com.simpleornothing.mindgarden.app"
+        applicationId = "com.simpleornothing.mindgarden.app.v03"
         minSdk = 26
         targetSdk = 35
         versionCode = 3
