@@ -1,0 +1,42 @@
+{
+  "version": 3,
+  "updatedAt": "2026-09-28",
+  "storage": "github",
+  "backgrounds": [
+    {
+      "id": "sunny-living-room",
+      "name": "햇살 좋은 거실 창가",
+      "type": "virtual",
+      "image": "assets/backgrounds/sunny-living-room.webp",
+      "source": "split-from-approved-virtual-scenes"
+    },
+    {
+      "id": "calm-study-desk",
+      "name": "차분한 공부방 책상",
+      "type": "virtual",
+      "image": "assets/backgrounds/calm-study-desk.webp",
+      "source": "split-from-approved-virtual-scenes"
+    },
+    {
+      "id": "green-veranda-garden",
+      "name": "초록빛 베란다 정원",
+      "type": "virtual",
+      "image": "assets/backgrounds/green-veranda-garden.webp",
+      "source": "split-from-approved-virtual-scenes"
+    },
+    {
+      "id": "tea-yard",
+      "name": "첨부 사진 · 차 마시는 뜰",
+      "type": "reference",
+      "image": "assets/backgrounds/tea-yard-clean.webp",
+      "source": "user-upload"
+    },
+    {
+      "id": "tea-yard2",
+      "name": "첨부 사진 · 창가와 화분",
+      "type": "reference",
+      "image": "assets/backgrounds/tea-yard2-clean.webp",
+      "source": "user-upload"
+    }
+  ]
+}

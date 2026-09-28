@@ -87,6 +87,10 @@
 #rest:disabled{opacity:.5}
 #plant svg{transition:opacity .25s}
 
+.longPressHint{margin:0 0 10px;color:#7b837b;font-size:11px;line-height:1.45}.plantItem{touch-action:pan-y;-webkit-user-select:none;user-select:none}
+
+.growthStageImage{display:block;width:100%;height:100%;object-fit:contain;pointer-events:none;user-select:none;-webkit-user-drag:none}
+
 
 /* The photo stays in place; night is rendered as a gentle tint and distant apartment lights. */
 #room.live-night.has-photo:not([data-live="0"]) #liveLight{
@@ -105,9 +109,11 @@
 #room.live-evening.has-photo:not([data-live="0"]) #roomPhoto{filter:brightness(.77) sepia(.10) saturate(.9)}
 #room.live-dawn.has-photo:not([data-live="0"]) #roomPhoto{filter:brightness(.86) sepia(.08)}
 #plant.photo-growth{mix-blend-mode:multiply}
+#plant.photo-growth.opaque-cutout{mix-blend-mode:normal}
 #plant.photo-growth .growthStageImage{transform:scale(1.55);transform-origin:center 62%}
 
-#room.live-night #plant.photo-growth{filter:brightness(.72) saturate(.82)}
+#room.live-night #plant.photo-growth{filter:none}
+#plant.photo-growth[data-stage="empty"] .growthStageImage,#plant.photo-growth[data-stage="seed"] .growthStageImage{transform:translateY(-14%) scale(2.05)}
 
 /* Keep the outdoor view readable while the unlit interior falls into shadow. */
 #room.live-night.has-photo:not([data-live="0"]) #liveLight{
@@ -118,7 +124,16 @@
 #room.live-night.live-twilight.has-photo:not([data-live="0"]) #liveLight{
   background:radial-gradient(ellipse 56% 62% at 53% 43%,transparent 0%,rgba(8,12,22,.18) 57%,rgba(5,8,16,.55) 100%),linear-gradient(180deg,rgba(26,23,47,.15),rgba(52,35,49,.10) 54%,rgba(9,13,22,.22));
 }
-#room.live-night #plant.photo-growth{filter:brightness(.62) saturate(.76)}
-#room.live-night.live-twilight #plant.photo-growth{filter:brightness(.8) saturate(.86)}
+#room.live-night #plant.photo-growth{filter:none}
+#room.live-night.live-twilight #plant.photo-growth{filter:none}
 #room.live-night #plant:not(.photo-growth) svg{filter:brightness(.64) saturate(.8)}
 #room.live-night.live-twilight #plant:not(.photo-growth) svg{filter:brightness(.82) saturate(.9)}
+
+.field select{display:block;width:100%;margin-top:6px;padding:12px;border:1px solid #dce2d8;border-radius:14px;background:#fff;font:inherit}
+
+/* Virtual backgrounds use weather alone: no clock tint, sun or cast shadow. */
+#room:not(.has-photo) #plantShadow,#room:not(.has-photo) #sun{display:none!important}
+#room:not(.has-photo) #liveLight{background:none!important}
+#room:not(.has-photo).weather-cloudy #liveLight{background:rgba(134,147,159,.13)!important}
+#room:not(.has-photo).weather-rain #liveLight{background:linear-gradient(180deg,rgba(68,91,121,.26),rgba(76,99,130,.12))!important}
+#room:not(.has-photo).weather-snow #liveLight{background:rgba(227,237,244,.20)!important}
