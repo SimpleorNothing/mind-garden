@@ -137,3 +137,12 @@
 #room:not(.has-photo).weather-cloudy #liveLight{background:rgba(134,147,159,.13)!important}
 #room:not(.has-photo).weather-rain #liveLight{background:linear-gradient(180deg,rgba(68,91,121,.26),rgba(76,99,130,.12))!important}
 #room:not(.has-photo).weather-snow #liveLight{background:rgba(227,237,244,.20)!important}
+
+/* Long-press actions for a saved garden plant. */
+.plantActionDialog{position:fixed;inset:0;z-index:80;background:#17251dcc;display:grid;place-items:center;padding:20px}
+.plantActionDialog[hidden],.plantActionCard button[hidden]{display:none}
+.plantActionCard{width:min(390px,100%);background:#faf9f3;border-radius:24px;padding:22px;box-shadow:0 18px 50px #12231855}
+.plantActionCard h2{font-size:22px;overflow-wrap:anywhere}
+.plantActionCard p{color:#607166;font-size:14px;line-height:1.5}
+.plantActionCard button{width:100%;padding:14px;border:0;border-radius:14px;margin-top:8px;background:#e7ece4;color:#2e4935;font:inherit;font-weight:700}
+#plantActionDelete{background:#f5e5df;color:#923b33}
