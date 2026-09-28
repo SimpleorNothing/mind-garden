@@ -131,17 +131,21 @@
 
 .field select{display:block;width:100%;margin-top:6px;padding:12px;border:1px solid #dce2d8;border-radius:14px;background:#fff;font:inherit}
 
-/* Virtual backgrounds also follow local time; they keep no artificial sun or cast shadow. */
+/* Virtual scenes: lit interiors after sunset, dark from midnight to sunrise. */
 #room:not(.has-photo) #plantShadow,#room:not(.has-photo) #sun{display:none!important}
 #room:not(.has-photo) #liveLight{background:none!important}
-#room:not(.has-photo).weather-cloudy #liveLight{background:rgba(134,147,159,.13)!important}
-#room:not(.has-photo).weather-rain #liveLight{background:linear-gradient(180deg,rgba(68,91,121,.26),rgba(76,99,130,.12))!important}
-#room:not(.has-photo).weather-snow #liveLight{background:rgba(227,237,244,.20)!important}
 #room.live-night:not(.has-photo):not([data-live="0"]) #liveLight{background:radial-gradient(ellipse 58% 65% at 55% 45%,rgba(13,20,33,.09) 0%,rgba(7,13,26,.45) 58%,rgba(3,8,18,.76) 100%),linear-gradient(180deg,rgba(10,18,37,.27),rgba(8,14,28,.48))!important}
-#room.live-night:not(.has-photo):not([data-live="0"]) #cityLights{opacity:.64}
-#room.live-night.live-twilight:not(.has-photo):not([data-live="0"]) #liveLight{background:radial-gradient(ellipse 60% 65% at 55% 45%,rgba(27,24,42,.08) 0%,rgba(18,18,35,.28) 58%,rgba(8,12,23,.54) 100%),linear-gradient(180deg,rgba(42,31,53,.20),rgba(12,16,29,.35))!important}
-#room[data-scene="desk"].live-night:not(.has-photo):not([data-live="0"]) #liveLight{background:none!important}
-#room[data-scene="desk"].live-night:not(.has-photo):not([data-live="0"]) #cityLights{opacity:0!important}
+#room.live-night:not(.has-photo):not([data-live="0"]) #cityLights{opacity:.5}
+#room.live-lit-night:not(.has-photo):not([data-live="0"]) #liveLight{background:linear-gradient(180deg,rgba(7,14,30,.22),rgba(5,10,21,.49))!important}
+#room.live-lit-night:not(.has-photo):not([data-live="0"]) #cityLights{opacity:.45}
+#room[data-scene="window"].live-lit-night:not(.has-photo) #liveLight,#room[data-scene="desk"].live-lit-night:not(.has-photo) #liveLight,#room[data-scene="tea-yard"].live-lit-night:not(.has-photo) #liveLight,#room[data-scene="tea-yard2"].live-lit-night:not(.has-photo) #liveLight{background:none!important}
+#room[data-scene="window"].live-lit-night:not(.has-photo) #cityLights,#room[data-scene="desk"].live-lit-night:not(.has-photo) #cityLights,#room[data-scene="tea-yard"].live-lit-night:not(.has-photo) #cityLights,#room[data-scene="tea-yard2"].live-lit-night:not(.has-photo) #cityLights{opacity:0!important}
+#room.live-dawn:not(.has-photo) #liveLight{background:linear-gradient(120deg,rgba(255,191,120,.23),transparent 60%)!important}
+#room.live-evening:not(.has-photo) #liveLight{background:linear-gradient(250deg,rgba(255,150,79,.22),rgba(56,78,110,.12) 58%,transparent)!important}
+#room:not(.has-photo)::after{content:'';position:absolute;z-index:3;inset:0;pointer-events:none;transition:background 1.5s}
+#room:not(.has-photo).weather-cloudy::after{background:rgba(109,124,138,.16)}
+#room:not(.has-photo).weather-rain::after{background:linear-gradient(180deg,rgba(51,75,104,.24),rgba(48,65,86,.14))}
+#room:not(.has-photo).weather-snow::after{background:rgba(224,235,244,.18)}
 
 /* Long-press actions for a saved garden plant. */
 .plantActionDialog{position:fixed;inset:0;z-index:80;background:#17251dcc;display:grid;place-items:center;padding:20px}

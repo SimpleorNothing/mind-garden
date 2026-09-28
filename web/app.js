@@ -97,7 +97,8 @@ let meta=loadMeta(),total=+(localStorage.sun||0),running=false,start=0,wakeLock=
 
 function saveMeta(){localStorage.setItem(META_KEY,JSON.stringify(meta))}
 function catalogItem(type,id){return CATALOG[type].find(x=>x.id===id)||CATALOG[type][0]}
-function sceneBackground(id){const item=CATALOG.scenes.find(x=>x.id===id),m=new Date().getHours()*60+new Date().getMinutes(),night=id==='desk'&&(m<6*60+18||m>18*60+24),image=night?'calm-study-desk-night.webp':item?.image;return image?'url("assets/backgrounds/'+image+'?v=20260928-4") center/cover no-repeat':'linear-gradient(135deg,#e9f1e8,#d3e7e2)'}
+const SUNRISE=6*60+18,SUNSET=18*60+24,INDOOR_NIGHT_IMAGES={window:'sunny-living-room-night.webp',desk:'calm-study-desk-night.webp','tea-yard':'tea-yard-night.webp','tea-yard2':'tea-yard2-night.webp'};
+function sceneBackground(id){const item=CATALOG.scenes.find(x=>x.id===id),m=new Date().getHours()*60+new Date().getMinutes(),image=m>=SUNSET?INDOOR_NIGHT_IMAGES[id]||item?.image:item?.image;return image?'url("assets/backgrounds/'+image+'?v=20260928-5") center/cover no-repeat':'linear-gradient(135deg,#e9f1e8,#d3e7e2)'}
 function refreshFlowerChoices(){const select=q('#newSpecies');if(!select)return;const chosen=select.value||meta?.active?.species||'calendula';select.replaceChildren(...CATALOG.species.map(sp=>{const o=document.createElement('option');o.value=sp.id;o.textContent=sp.name+' · 무료';return o}));select.value=CATALOG.species.some(sp=>sp.id===chosen)?chosen:'calendula'}
 function activeSpecies(){return catalogItem('species',meta.active.species)}
 function growthTargetMs(){return activeSpecies().growthMinutes*MIN}
@@ -344,10 +345,10 @@ plantPlace();roomPlace()})();
   });
   room.insertBefore(lights,q('#plantShadow'));
 })();
-;(()=>{const light=q('#liveLight'),sun=q('#sun'),shadow=q('#plantShadow');const rise=6*60+18,set=18*60+24;
+;(()=>{const light=q('#liveLight'),sun=q('#sun'),shadow=q('#plantShadow');const rise=SUNRISE,set=SUNSET;
 function live(){if(room.dataset.live==='0'){room.classList.remove('live-night','live-twilight','live-dawn','live-day','live-evening');sun.style.opacity='0';shadow.style.opacity='0';return}const hasPhoto=room.classList.contains('has-photo'),n=new Date(),m=n.getHours()*60+n.getMinutes(),day=m>=rise&&m<=set,p=Math.max(0,Math.min(1,(m-rise)/(set-rise))),noon=(rise+set)/2,side=Math.max(-1,Math.min(1,(m-noon)/((set-rise)/2)));
-room.classList.remove('live-night','live-twilight','live-dawn','live-day','live-evening');
-if(!day){room.classList.add('live-night');if(m>set&&m<20*60)room.classList.add('live-twilight')}else if(p<.16)room.classList.add('live-dawn');else if(p>.82)room.classList.add('live-evening');else room.classList.add('live-day');
+room.classList.remove('live-night','live-lit-night','live-dawn','live-day','live-evening');
+if(m<rise)room.classList.add('live-night');else if(m>set)room.classList.add('live-lit-night');else if(p<.16)room.classList.add('live-dawn');else if(p>.82)room.classList.add('live-evening');else room.classList.add('live-day');
 if(!hasPhoto)room.style.background=sceneBackground(meta.active.scene);
 if(day&&hasPhoto){sun.style.left=(7+86*p)+'%';sun.style.right='auto';sun.style.top=(38-27*Math.sin(Math.PI*p))+'px';sun.style.opacity='1';sun.style.filter='brightness('+(1+.18*Math.sin(Math.PI*p))+')';}else sun.style.opacity='0';
 const pr=plant.getBoundingClientRect(),rr=room.getBoundingClientRect(),cx=pr.left-rr.left+pr.width/2,cy=pr.bottom-rr.top-8;
