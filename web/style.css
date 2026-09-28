@@ -131,12 +131,15 @@
 
 .field select{display:block;width:100%;margin-top:6px;padding:12px;border:1px solid #dce2d8;border-radius:14px;background:#fff;font:inherit}
 
-/* Virtual backgrounds use weather alone: no clock tint, sun or cast shadow. */
+/* Virtual backgrounds also follow local time; they keep no artificial sun or cast shadow. */
 #room:not(.has-photo) #plantShadow,#room:not(.has-photo) #sun{display:none!important}
 #room:not(.has-photo) #liveLight{background:none!important}
 #room:not(.has-photo).weather-cloudy #liveLight{background:rgba(134,147,159,.13)!important}
 #room:not(.has-photo).weather-rain #liveLight{background:linear-gradient(180deg,rgba(68,91,121,.26),rgba(76,99,130,.12))!important}
 #room:not(.has-photo).weather-snow #liveLight{background:rgba(227,237,244,.20)!important}
+#room.live-night:not(.has-photo):not([data-live="0"]) #liveLight{background:radial-gradient(ellipse 58% 65% at 55% 45%,rgba(13,20,33,.09) 0%,rgba(7,13,26,.45) 58%,rgba(3,8,18,.76) 100%),linear-gradient(180deg,rgba(10,18,37,.27),rgba(8,14,28,.48))!important}
+#room.live-night:not(.has-photo):not([data-live="0"]) #cityLights{opacity:.64}
+#room.live-night.live-twilight:not(.has-photo):not([data-live="0"]) #liveLight{background:radial-gradient(ellipse 60% 65% at 55% 45%,rgba(27,24,42,.08) 0%,rgba(18,18,35,.28) 58%,rgba(8,12,23,.54) 100%),linear-gradient(180deg,rgba(42,31,53,.20),rgba(12,16,29,.35))!important}
 
 /* Long-press actions for a saved garden plant. */
 .plantActionDialog{position:fixed;inset:0;z-index:80;background:#17251dcc;display:grid;place-items:center;padding:20px}
