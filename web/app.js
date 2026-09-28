@@ -20,7 +20,7 @@ let CATALOG={
 };
 
 function loadFlowerCatalogFromGitHub(){
-  fetch('data/flowers.json?v=3',{cache:'no-cache'})
+  fetch('data/flowers.json?v=4',{cache:'no-cache'})
     .then(r=>{if(!r.ok)throw new Error('flower catalog '+r.status);return r.json()})
     .then(data=>{
       if(!data||!Array.isArray(data.species)||!data.species.length)return;
@@ -34,7 +34,7 @@ loadFlowerCatalogFromGitHub();
 
 async function loadGitHubFlowerCatalog(){
   try{
-    const res=await fetch('data/flowers.json?v=3',{cache:'no-store'});
+    const res=await fetch('data/flowers.json?v=4',{cache:'no-store'});
     if(!res.ok)throw new Error('flowers.json '+res.status);
     const data=await res.json();
     if(Array.isArray(data.species)&&data.species.length){
@@ -160,9 +160,11 @@ function flowerSVG(id,key){
 window.__flowerFallback=(id,key)=>flowerSVG(id,key);
 function renderPlantVisual(ratio,elapsedMinutes){
   const sp=activeSpecies(),st=stageInfo(elapsedMinutes);
-  const image=sp.growthImages&&sp.growthImages[st.key];
+  const cutout=sp.overlayImages&&sp.overlayImages[st.key];
+  const image=cutout||(sp.growthImages&&sp.growthImages[st.key]);
   plant.innerHTML=image?'<img class="growthStageImage" src="'+image+'?v=20260928-3" alt="'+sp.name+' '+st.name+'" draggable="false">':flowerSVG(sp.id,st.key);
   plant.classList.toggle('photo-growth',Boolean(image));
+  plant.classList.toggle('opaque-cutout',Boolean(cutout));
   plant.dataset.stage=st.key;
   plant.dataset.species=sp.id;
   plant.dataset.pot=meta.active.pot;
