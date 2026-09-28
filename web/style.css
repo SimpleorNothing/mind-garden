@@ -109,6 +109,7 @@
 #room.live-evening.has-photo:not([data-live="0"]) #roomPhoto{filter:brightness(.77) sepia(.10) saturate(.9)}
 #room.live-dawn.has-photo:not([data-live="0"]) #roomPhoto{filter:brightness(.86) sepia(.08)}
 #plant.photo-growth{mix-blend-mode:multiply}
+#plant.photo-growth.opaque-cutout{mix-blend-mode:normal}
 #plant.photo-growth .growthStageImage{transform:scale(1.55);transform-origin:center 62%}
 
 #room.live-night #plant.photo-growth{filter:none}
