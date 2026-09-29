@@ -65,7 +65,7 @@ function render(){
   notice.textContent=sp.name+' · '+sp.difficulty+' · 개화 '+sp.growthMinutes+'분 · 아래 6단계를 누르면 크게 볼 수 있습니다.';
   grid.innerHTML=stages.map((s,i)=>{
     const src='../'+sp.growthImages[s.key]+'?v=20260929-1';
-    const needsPot=sp.id==='chrysanthemum';
+    const needsPot=false;
     return '<button class="card" data-src="'+src+'" data-caption="'+sp.name+' · '+s.name+' · '+minuteLabel(sp,i)+'"><div class="image growth-card-image'+(needsPot?' needs-pot':'')+'"><img class="cardPot" src="../assets/pots/ivory-ceramic.webp?v=20260929-3" alt="" aria-hidden="true"><img class="cardFlower" src="'+src+'" alt="'+sp.name+' '+s.name+'" loading="eager"></div><div class="meta"><strong>'+(i+1)+'. '+s.name+'</strong><span>'+minuteLabel(sp,i)+'</span><small>'+s.key+'</small></div></button>';
   }).join('');
   grid.querySelectorAll('.card').forEach(b=>b.onclick=()=>{large.src=b.dataset.src;large.alt=b.dataset.caption;caption.textContent=b.dataset.caption;viewer.showModal()});
@@ -87,7 +87,7 @@ const scene=document.querySelector('#scene'),sceneImage=document.querySelector('
 const flower=document.querySelector('#flowerOverlay'),flowerImage=flower.querySelector('.previewFlower'),flowerStage=document.querySelector('#overlayStage');
 flowerStage.replaceChildren(...stages.map(s=>{const option=document.createElement('option');option.value=s.key;option.textContent=s.name;return option}));
 flowerStage.value='bloom';flowerStage.onchange=updateFlower;
-function updateFlower(){const sp=catalog.find(x=>x.id===document.querySelector('#overlaySpecies').value),src=sp?.growthImages?.[flowerStage.value];if(!src){flower.hidden=true;return}flower.hidden=false;const needsPot=sp.id==='chrysanthemum',cutout=needsPot&&sp.overlayImages?.[flowerStage.value];flower.classList.toggle('cutout',Boolean(cutout));flower.classList.toggle('needs-pot',Boolean(cutout));flowerImage.src='../'+(cutout||src)+'?v=20260929-3';flowerImage.alt=sp.name+' '+stages.find(x=>x.key===flowerStage.value).name+' 이미지'}
+function updateFlower(){const sp=catalog.find(x=>x.id===document.querySelector('#overlaySpecies').value),src=sp?.growthImages?.[flowerStage.value];if(!src){flower.hidden=true;return}flower.hidden=false;const cutout=null;flower.classList.toggle('cutout',false);flower.classList.remove('needs-pot');flowerImage.src='../'+(cutout||src)+'?v=20260929-4';flowerImage.alt=sp.name+' '+stages.find(x=>x.key===flowerStage.value).name+' 이미지'}
 document.querySelector('#flowerSize').oninput=e=>{flower.style.width=e.target.value+'%'};
 document.querySelector('#resetFlower').onclick=()=>{flower.style.left='70%';flower.style.top='62%';flower.style.width='38%';document.querySelector('#flowerSize').value=38};
 let dragging=false,offsetX=0,offsetY=0;
