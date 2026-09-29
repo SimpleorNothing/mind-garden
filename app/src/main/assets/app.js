@@ -61,7 +61,7 @@ function defaultMeta(){
     completedCount:0,
     codex:{},
     collection:[],
-    seedCounts:{calendula:1,cornflower:0,pansy:0,nigella:0},
+    seedCounts:{calendula:1,cornflower:0,pansy:0,nigella:0,chrysanthemum:0},
     inventory:{species:[],pots:['ivory'],scenes:['window']},
     active:{species:'calendula',pot:'ivory',scene:'window',planted:false},
     dailyFocus:{},
