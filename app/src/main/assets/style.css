@@ -89,7 +89,7 @@
 
 .longPressHint{margin:0 0 10px;color:#7b837b;font-size:11px;line-height:1.45}.plantItem{touch-action:pan-y;-webkit-user-select:none;user-select:none}
 
-.growthStageImage{display:block;width:100%;height:100%;object-fit:contain;pointer-events:none;user-select:none;-webkit-user-drag:none}
+.growthStageImage{position:relative;z-index:2;display:block;width:100%;height:100%;object-fit:contain;pointer-events:none;user-select:none;-webkit-user-drag:none}.plantPot{position:absolute;z-index:1;left:3%;bottom:-5%;width:94%;height:auto;pointer-events:none;user-select:none}
 
 
 /* The photo stays in place; night is rendered as a gentle tint and distant apartment lights. */
