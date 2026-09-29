@@ -15,7 +15,7 @@ select{font:inherit;padding:10px 36px 10px 12px;border:1px solid #d5d6cb;border-
 .card{border:1px solid #deddd3;border-radius:20px;background:#fff;overflow:hidden;box-shadow:0 8px 24px #2635260b;cursor:pointer;text-align:left;padding:0}
 .card:focus,.card:hover{outline:2px solid #87977f;outline-offset:2px}
 .image{aspect-ratio:1/1;background:#f7f4ec;display:grid;place-items:center;overflow:hidden}
-.image img{width:100%;height:100%;object-fit:cover;display:block}
+.image img{width:100%;height:100%;object-fit:cover;display:block}.growth-card-image{position:relative}.growth-card-image .cardPot{position:absolute;z-index:1;left:3%;bottom:-5%;width:94%;height:auto;object-fit:contain;pointer-events:none}.growth-card-image .cardFlower{position:relative;z-index:2}
 .meta{padding:13px 14px 15px}.meta strong{font-size:17px}.meta span{float:right;color:#778178;font-size:13px}
 .meta small{display:block;margin-top:5px;color:#777}
 .empty{min-height:360px;display:grid;place-items:center;border:1px dashed #c8c9c0;border-radius:18px;color:#777;background:#faf9f4}
@@ -65,7 +65,7 @@ function render(){
   notice.textContent=sp.name+' · '+sp.difficulty+' · 개화 '+sp.growthMinutes+'분 · 아래 6단계를 누르면 크게 볼 수 있습니다.';
   grid.innerHTML=stages.map((s,i)=>{
     const src='../'+sp.growthImages[s.key]+'?v=20260929-1';
-    return '<button class="card" data-src="'+src+'" data-caption="'+sp.name+' · '+s.name+' · '+minuteLabel(sp,i)+'"><div class="image"><img src="'+src+'" alt="'+sp.name+' '+s.name+'" loading="eager"></div><div class="meta"><strong>'+(i+1)+'. '+s.name+'</strong><span>'+minuteLabel(sp,i)+'</span><small>'+s.key+'</small></div></button>';
+    return '<button class="card" data-src="'+src+'" data-caption="'+sp.name+' · '+s.name+' · '+minuteLabel(sp,i)+'"><div class="image growth-card-image"><img class="cardPot" src="../assets/pots/ivory-ceramic.webp?v=20260929-2" alt="" aria-hidden="true"><img class="cardFlower" src="'+src+'" alt="'+sp.name+' '+s.name+'" loading="eager"></div><div class="meta"><strong>'+(i+1)+'. '+s.name+'</strong><span>'+minuteLabel(sp,i)+'</span><small>'+s.key+'</small></div></button>';
   }).join('');
   grid.querySelectorAll('.card').forEach(b=>b.onclick=()=>{large.src=b.dataset.src;large.alt=b.dataset.caption;caption.textContent=b.dataset.caption;viewer.showModal()});
 }
