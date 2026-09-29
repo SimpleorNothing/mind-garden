@@ -166,7 +166,7 @@ function renderPlantVisual(ratio,elapsedMinutes){
   const sp=activeSpecies(),st=stageInfo(elapsedMinutes);
   const cutout=sp.overlayImages&&sp.overlayImages[st.key];
   const image=cutout||(sp.growthImages&&sp.growthImages[st.key]);
-  plant.innerHTML=image?'<img class="growthStageImage" src="'+image+'?v=20260928-3" alt="'+sp.name+' '+st.name+'" draggable="false">':flowerSVG(sp.id,st.key);
+  plant.innerHTML=image?'<img class="plantPot" src="assets/pots/ivory-ceramic.webp?v=20260929-2" alt="" aria-hidden="true"><img class="growthStageImage" src="'+image+'?v=20260929-2" alt="'+sp.name+' '+st.name+'" draggable="false">':flowerSVG(sp.id,st.key);
   plant.classList.toggle('photo-growth',Boolean(image));
   plant.classList.toggle('opaque-cutout',Boolean(cutout));
   plant.dataset.stage=st.key;
