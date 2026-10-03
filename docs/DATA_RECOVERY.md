@@ -7,3 +7,5 @@ On Android, select an internal shared folder under Documents when first opening 
 If folder selection is postponed, only app-private data is saved and uninstall removes that data. Reopen the app to select a folder before uninstalling. Invalid snapshots are never overwritten when no readable generation remains. Failed shared writes retain app-private state and retry. Web browser builds keep browser localStorage only.
 
 Install updates over the existing app before selecting the folder. If Android rejects an update because the signing certificate differs, preserve the existing installation and its data rather than uninstalling it.
+
+For migration from a differently signed old APK, export mind-garden-backup.json with the old app before uninstalling and retain it in the selected Documents folder (or its MindGarden subfolder). The new app accepts this legacy export on first startup when its own two snapshots do not yet exist. Never uninstall the old app before exporting and checking the backup file.
