@@ -16,39 +16,15 @@ import androidx.appcompat.app.AppCompatActivity
 
 class MainActivity : AppCompatActivity() {
     private lateinit var web: WebView
-    private var pendingBackup: String? = null
-    private lateinit var gardenStore: GardenGitHubStore
+    private lateinit var gardenStore: LocalGardenStore
     private var fileCallback: ValueCallback<Array<Uri>>? = null
 
     private inner class AppBridge {
         @JavascriptInterface
-        fun hasGardenGitHubConnection(): Boolean = gardenStore.connected()
-
-        @JavascriptInterface
-        fun gardenStateDigest(value: String): String = java.security.MessageDigest.getInstance("SHA-256")
-            .digest(value.toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it) }
-
-        @JavascriptInterface
-        fun connectGardenGitHub() = gardenStore.connect()
-
-        @JavascriptInterface
-        fun gardenGitHubRequest(id: String, operation: String, payload: String) {
+        fun gardenLocalRequest(id: String, operation: String, payload: String) {
             runOnUiThread {
                 if (web.url?.startsWith("file:///android_asset/") == true) gardenStore.request(id, operation, payload)
             }
-        }
-
-        @JavascriptInterface
-        fun exportGardenBackup(json: String) {
-            if (json.length > 12 * 1024 * 1024) return
-            runOnUiThread {
-                pendingBackup = json
-                backupWriter.launch("mind-garden-backup.json")
-            }
-        }
-        @JavascriptInterface
-        fun importGardenBackup() {
-            runOnUiThread { backupReader.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) }
         }
         @JavascriptInterface
         fun setKeepScreenOn(enabled: Boolean) {
@@ -62,40 +38,8 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun backupResult(ok: Boolean, message: String) {
-        web.evaluateJavascript("window.mindGardenBackupResult && window.mindGardenBackupResult($ok,${JSONObject.quote(message)})", null)
-    }
-    private val backupWriter = registerForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
-        val json = pendingBackup
-        pendingBackup = null
-        if (uri != null && json != null) {
-            try {
-                val stream = contentResolver.openOutputStream(uri) ?: error("Cannot open backup")
-                stream.bufferedWriter(Charsets.UTF_8).use { it.write(json) }
-                backupResult(true, "백업 파일을 저장했습니다.")
-            } catch (_: Exception) { backupResult(false, "백업 파일을 저장하지 못했습니다.") }
-        }
-    }
-    private val backupReader = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) {
-            try {
-                val stream = contentResolver.openInputStream(uri) ?: error("Cannot open backup")
-                val bytes = stream.use { input ->
-                    val output = java.io.ByteArrayOutputStream()
-                    val buffer = ByteArray(8192)
-                    while (true) {
-                        val count = input.read(buffer)
-                        if (count < 0) break
-                        require(output.size() + count <= 12 * 1024 * 1024)
-                        output.write(buffer, 0, count)
-                    }
-                    output.toByteArray()
-                }
-                require(bytes.size <= 12 * 1024 * 1024)
-                val json = bytes.toString(Charsets.UTF_8)
-                web.evaluateJavascript("window.mindGardenRestoreBackup && window.mindGardenRestoreBackup(${JSONObject.quote(json)})", null)
-            } catch (_: Exception) { backupResult(false, "백업 파일을 읽지 못했습니다.") }
-        }
+    private val folderPicker = registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        gardenStore.folderSelected(uri)
     }
 
     private val picker = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -117,7 +61,7 @@ class MainActivity : AppCompatActivity() {
         web.settings.allowFileAccess = true
         web.settings.allowContentAccess = true
         web.settings.mediaPlaybackRequiresUserGesture = false
-        gardenStore = GardenGitHubStore(this, web)
+        gardenStore = LocalGardenStore(this, web) { folderPicker.launch(it) }
         web.addJavascriptInterface(AppBridge(), "AndroidBridge")
         web.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView?, request: android.webkit.WebResourceRequest?): Boolean {
@@ -167,7 +111,7 @@ class MainActivity : AppCompatActivity() {
     override fun onPause() {
         if (::web.isInitialized) {
             web.evaluateJavascript(
-                "window.mindGardenPauseForBackground && window.mindGardenPauseForBackground()",
+                "window.mindGardenPauseForBackground && window.mindGardenPauseForBackground(); window.MindGardenLocalStore && window.MindGardenLocalStore.flush()",
                 null
             )
         }
@@ -180,3 +124,4 @@ class MainActivity : AppCompatActivity() {
         super.onSaveInstanceState(outState)
     }
 }
+
