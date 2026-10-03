@@ -1,5 +1,8 @@
 package com.simpleornothing.mindgarden
 
+import android.media.MediaPlayer
+import android.media.AudioAttributes
+import android.media.AudioManager
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
@@ -15,11 +18,58 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 
 class MainActivity : AppCompatActivity() {
+    private var restPlayer: MediaPlayer? = null
+    private var foreground = false
     private lateinit var web: WebView
     private lateinit var gardenStore: LocalGardenStore
     private var fileCallback: ValueCallback<Array<Uri>>? = null
 
+    private fun stopRestMusicPlayer() {
+        restPlayer?.release()
+        restPlayer = null
+    }
+
     private inner class AppBridge {
+        @JavascriptInterface
+        fun startRestMusic(volume: Double) {
+            runOnUiThread {
+                if (!foreground || web.url?.startsWith("file:///android_asset/") != true) return@runOnUiThread
+                stopRestMusicPlayer()
+                try {
+                    val player = MediaPlayer()
+                    restPlayer = player
+                    player.setAudioAttributes(AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_MEDIA)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build())
+                    resources.openRawResourceFd(R.raw.meditation).use { fd ->
+                        player.setDataSource(fd.fileDescriptor, fd.startOffset, fd.length)
+                    }
+                    player.isLooping = true
+                    val level = volume.toFloat().coerceIn(0f, 1f)
+                    player.setVolume(level, level)
+                    player.setOnErrorListener { _, _, _ ->
+                        stopRestMusicPlayer()
+                        web.evaluateJavascript("window.MindGardenRestMusic?.onError?.()", null)
+                        true
+                    }
+                    player.prepare()
+                    player.start()
+                } catch (_: Exception) {
+                    stopRestMusicPlayer()
+                    web.evaluateJavascript("window.MindGardenRestMusic?.onError?.()", null)
+                }
+            }
+        }
+        @JavascriptInterface
+        fun stopRestMusic() { runOnUiThread { stopRestMusicPlayer() } }
+        @JavascriptInterface
+        fun setRestMusicVolume(volume: Double) {
+            runOnUiThread {
+                val level = volume.toFloat().coerceIn(0f, 1f)
+                restPlayer?.setVolume(level, level)
+            }
+        }
+
         @JavascriptInterface
         fun gardenLocalRequest(id: String, operation: String, payload: String) {
             runOnUiThread {
@@ -54,6 +104,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        volumeControlStream = AudioManager.STREAM_MUSIC
         web = WebView(this)
         setContentView(web)
         web.settings.javaScriptEnabled = true
@@ -103,12 +154,15 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        foreground = true
         if (::web.isInitialized) {
             web.evaluateJavascript("window.mindGardenRefreshLive && window.mindGardenRefreshLive()", null)
         }
     }
 
     override fun onPause() {
+        foreground = false
+        stopRestMusicPlayer()
         if (::web.isInitialized) {
             web.evaluateJavascript(
                 "window.mindGardenPauseForBackground && window.mindGardenPauseForBackground(); window.MindGardenLocalStore && window.MindGardenLocalStore.flush()",
@@ -117,6 +171,11 @@ class MainActivity : AppCompatActivity() {
         }
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         super.onPause()
+    }
+
+    override fun onDestroy() {
+        stopRestMusicPlayer()
+        super.onDestroy()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
