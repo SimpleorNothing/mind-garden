@@ -31,7 +31,9 @@ class MainActivity : AppCompatActivity() {
 
     private inner class AppBridge {
         @JavascriptInterface
-        fun startRestMusic(volume: Double) {
+        fun startRestMusic(volume: Double) { startRestMusicTrack(volume, "meditation") }
+        @JavascriptInterface
+        fun startRestMusicTrack(volume: Double, track: String) {
             runOnUiThread {
                 if (!foreground || web.url?.startsWith("file:///android_asset/") != true) return@runOnUiThread
                 stopRestMusicPlayer()
@@ -41,7 +43,13 @@ class MainActivity : AppCompatActivity() {
                     player.setAudioAttributes(AudioAttributes.Builder()
                         .setUsage(AudioAttributes.USAGE_MEDIA)
                         .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build())
-                    resources.openRawResourceFd(R.raw.meditation).use { fd ->
+                    val resource = when (track) {
+                        "piano" -> R.raw.piano
+                        "forest" -> R.raw.forest
+                        "rain" -> R.raw.rain
+                        else -> R.raw.meditation
+                    }
+                    resources.openRawResourceFd(resource).use { fd ->
                         player.setDataSource(fd.fileDescriptor, fd.startOffset, fd.length)
                     }
                     player.isLooping = true

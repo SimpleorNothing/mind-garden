@@ -1,7 +1,7 @@
 /* Local-only automatic garden persistence. Restore before app initialization. */
 (function(root){
   'use strict';
-  const keys=['mindGardenMetaV1','sun','myPlants','room','plantX','plantY','plantSize','roomX','roomY','roomScale','mindGardenFocusSessionV1'];
+  const keys=['mindGardenMetaV1','sun','myPlants','room','plantX','plantY','plantSize','roomX','roomY','roomScale','mindGardenFocusSessionV1','mindGardenMusicTrack'];
   function validate(state){
     if(!state || state.version!==1 || !state.values || typeof state.values!=='object' || Array.isArray(state.values))throw Error('잘못된 정원 저장 파일');
     for(const [key,value] of Object.entries(state.values))if(!keys.includes(key)||typeof value!=='string')throw Error('잘못된 정원 값');
@@ -35,7 +35,7 @@
     try{if(bridge?.gardenLocalRequest){const result=await request('prepare',{version:1,values:snapshot(storage)});if(result.state)restore(storage,result.state);if(result.warning)notify(result.warning);}}
     catch(e){notify(e.message);}
     const script=document.createElement('script');script.src='app.js?v=63';
-    script.onload=()=>{ready=true;flush();setInterval(flush,1000);};document.body.appendChild(script);
+    script.onload=()=>{root.MindGardenRestMusic?.restoreSettings();ready=true;flush();setInterval(flush,1000);};document.body.appendChild(script);
   }
   document.addEventListener('visibilitychange',()=>{if(document.hidden)flush();});root.addEventListener('pagehide',flush);
   boot();

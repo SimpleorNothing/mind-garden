@@ -25,7 +25,7 @@ class LocalGardenStore(
     private val internal = AtomicFile(File(activity.filesDir, "garden-local.json"))
     private var pending: Pair<String, String>? = null
     private var prepared = false
-    private val keys = setOf("mindGardenMetaV1", "sun", "myPlants", "room", "plantX", "plantY", "plantSize", "roomX", "roomY", "roomScale", "mindGardenFocusSessionV1")
+    private val keys = setOf("mindGardenMetaV1", "sun", "myPlants", "room", "plantX", "plantY", "plantSize", "roomX", "roomY", "roomScale", "mindGardenFocusSessionV1", "mindGardenMusicTrack")
     private val limit = 12 * 1024 * 1024
 
     private fun reply(id: String, value: JSONObject) = activity.runOnUiThread {
