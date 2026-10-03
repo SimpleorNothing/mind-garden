@@ -79,6 +79,13 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        if (::web.isInitialized) {
+            web.evaluateJavascript("window.mindGardenRefreshLive && window.mindGardenRefreshLive()", null)
+        }
+    }
+
     override fun onPause() {
         if (::web.isInitialized) {
             web.evaluateJavascript(
