@@ -48,6 +48,7 @@
         if(booted){win.location.reload();return false;}
       }
       storage.setItem('gardenSyncSha',remote.sha);
+      storage.setItem('gardenSyncBaseline',digest(remoteText));
     }else{
       if(base){conflict();return;}
       storage.setItem('gardenSyncPending','1');
