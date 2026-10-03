@@ -15,9 +15,27 @@ import androidx.appcompat.app.AppCompatActivity
 
 class MainActivity : AppCompatActivity() {
     private lateinit var web: WebView
+    private lateinit var gardenStore: GardenGitHubStore
     private var fileCallback: ValueCallback<Array<Uri>>? = null
 
     private inner class AppBridge {
+        @JavascriptInterface
+        fun hasGardenGitHubConnection(): Boolean = gardenStore.connected()
+
+        @JavascriptInterface
+        fun gardenStateDigest(value: String): String = java.security.MessageDigest.getInstance("SHA-256")
+            .digest(value.toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it) }
+
+        @JavascriptInterface
+        fun connectGardenGitHub() = gardenStore.connect()
+
+        @JavascriptInterface
+        fun gardenGitHubRequest(id: String, operation: String, payload: String) {
+            runOnUiThread {
+                if (web.url?.startsWith("file:///android_asset/") == true) gardenStore.request(id, operation, payload)
+            }
+        }
+
         @JavascriptInterface
         fun setKeepScreenOn(enabled: Boolean) {
             runOnUiThread {
@@ -49,8 +67,18 @@ class MainActivity : AppCompatActivity() {
         web.settings.allowFileAccess = true
         web.settings.allowContentAccess = true
         web.settings.mediaPlaybackRequiresUserGesture = false
+        gardenStore = GardenGitHubStore(this, web)
         web.addJavascriptInterface(AppBridge(), "AndroidBridge")
-        web.webViewClient = WebViewClient()
+        web.webViewClient = object : WebViewClient() {
+            override fun shouldOverrideUrlLoading(view: WebView?, request: android.webkit.WebResourceRequest?): Boolean {
+                val uri = request?.url ?: return true
+                if (uri.toString().startsWith("file:///android_asset/")) return false
+                if (uri.scheme == "https" || uri.scheme == "http") {
+                    try { startActivity(Intent(Intent.ACTION_VIEW, uri)) } catch (_: Exception) {}
+                }
+                return true
+            }
+        }
         web.webChromeClient = object : WebChromeClient() {
             override fun onShowFileChooser(
                 view: WebView?,
@@ -102,3 +130,4 @@ class MainActivity : AppCompatActivity() {
         super.onSaveInstanceState(outState)
     }
 }
+
