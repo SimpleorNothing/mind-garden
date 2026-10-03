@@ -163,7 +163,3 @@
 #room[data-live="0"] #liveLight{background:none!important}
 #room[data-live="0"] #cityLights{opacity:0!important}
 #room[data-live="0"] #roomPhoto{filter:none}
-
-.restMusicControls{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px}.restMusicControls button{width:auto;margin:0;padding:10px 14px;font-size:14px}.restMusicControls label{display:flex;align-items:center;gap:8px;font-size:13px;color:#586650}.restMusicControls input{width:110px;accent-color:#58784a}
-
-.restMusicChoice{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;font-size:14px;color:#53665a}.restMusicChoice select{min-width:0;max-width:70%;border:1px solid #dbe4d7;border-radius:12px;padding:10px;background:#fff;font:inherit;color:#26362b}
