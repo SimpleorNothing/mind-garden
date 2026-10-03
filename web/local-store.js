@@ -26,9 +26,9 @@
   async function flush(){
     if(!ready||!bridge?.gardenLocalRequest||inFlight)return;
     const text=JSON.stringify(snapshot(storage));if(text===last)return;
-    inFlight=true;
-    try{const result=await request('save',{version:1,savedAt:new Date().toISOString(),values:JSON.parse(text)});last=text;if(result.warning)notify(result.warning);}
-    catch(e){notify(e.message);}finally{inFlight=false;}
+    inFlight=true;let saved=false;
+    try{const result=await request('save',{version:1,savedAt:new Date().toISOString(),values:JSON.parse(text)});last=text;saved=true;if(result.warning)notify(result.warning);}
+    catch(e){notify(e.message);}finally{inFlight=false;if(saved&&JSON.stringify(snapshot(storage))!==last)flush();}
   }
   root.MindGardenLocalStore={flush};
   async function boot(){
