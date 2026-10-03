@@ -29,7 +29,7 @@ jobs:
             keytool -genkeypair -keystore "$HOME/.android/debug.keystore" -storepass android -keypass android -alias androiddebugkey -dname "CN=Android Debug,O=Android,C=US" -keyalg RSA -keysize 2048 -validity 10000
           fi
       - name: Validate local garden storage
-        run: node --test tests/local-store.test.cjs
+        run: node --test tests/*.test.cjs
       - run: gradle assembleDebug assembleLive assembleLocal
       - uses: actions/upload-artifact@v4
         with:

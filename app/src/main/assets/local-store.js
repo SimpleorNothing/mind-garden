@@ -34,7 +34,7 @@
   async function boot(){
     try{if(bridge?.gardenLocalRequest){const result=await request('prepare',{version:1,values:snapshot(storage)});if(result.state)restore(storage,result.state);if(result.warning)notify(result.warning);}}
     catch(e){notify(e.message);}
-    const script=document.createElement('script');script.src='app.js?v=61';
+    const script=document.createElement('script');script.src='app.js?v=62';
     script.onload=()=>{ready=true;flush();setInterval(flush,1000);};document.body.appendChild(script);
   }
   document.addEventListener('visibilitychange',()=>{if(document.hidden)flush();});root.addEventListener('pagehide',flush);
