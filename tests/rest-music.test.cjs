@@ -2,7 +2,7 @@ const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const vm=require('node:vm');
 const fs=require('node:fs');
-function setup(deferred=false){
+function setup(deferred=false,bridge=null){
   const elements={'#restMusicToggle':{setAttribute(){}},'#restMusicVolume':{value:'30'}},events={},contexts=[],timers=new Map();let seq=0;
   const parameter=()=>({value:0,setValueAtTime(){},linearRampToValueAtTime(){},exponentialRampToValueAtTime(){},setTargetAtTime(v){this.value=v;}});
   class AudioContext {
@@ -12,7 +12,7 @@ function setup(deferred=false){
     resume(){return deferred?new Promise(resolve=>this.resolve=resolve):Promise.resolve();}
     close(){this.closed=true;return Promise.resolve();}
   }
-  const window={AudioContext,addEventListener(name,cb){events[name]=cb;}},document={hidden:false,querySelector:s=>elements[s],addEventListener(name,cb){events[name]=cb;}};
+  const window={AndroidBridge:bridge,AudioContext,addEventListener(name,cb){events[name]=cb;}},document={hidden:false,querySelector:s=>elements[s],addEventListener(name,cb){events[name]=cb;}};
   vm.runInNewContext(fs.readFileSync('web/rest-music.js','utf8'),{window,document,setInterval:cb=>{timers.set(++seq,cb);return seq;},clearInterval:id=>timers.delete(id)});
   return {music:window.MindGardenRestMusic,elements,contexts,timers,events,document};
 }
@@ -32,4 +32,16 @@ test('stopping while audio resume is pending cannot start music later',async()=>
 test('web and APK contain identical offline music and load it before app boot',()=>{
   assert.equal(fs.readFileSync('web/rest-music.js','utf8'),fs.readFileSync('app/src/main/assets/rest-music.js','utf8'));
   const html=fs.readFileSync('web/index.html','utf8');assert.ok(html.indexOf('src="rest-music.js')<html.indexOf('src="local-store.js'));
+});
+
+test('Android playback uses native bridge and sends stop and volume changes',async()=>{
+  const calls=[],bridge={startRestMusic:v=>calls.push(['start',v]),stopRestMusic:()=>calls.push(['stop']),setRestMusicVolume:v=>calls.push(['volume',v])};
+  const s=setup(false,bridge);await s.music.start();
+  assert.equal(s.contexts.length,0);assert.deepEqual(calls,[['stop'],['start',0.65]]);
+  s.elements['#restMusicVolume'].value='80';s.elements['#restMusicVolume'].oninput();
+  assert.deepEqual(calls.at(-1),['volume',0.8]);
+  s.document.hidden=true;s.events.visibilitychange();assert.deepEqual(calls.at(-1),['stop']);
+  s.music.isResting=()=>true;s.elements['#restMusicToggle'].onclick();await s.music.start();
+  assert.equal(calls.filter(c=>c[0]==='start').length,1);
+  s.elements['#restMusicToggle'].onclick();assert.equal(calls.filter(c=>c[0]==='start').length,2);
 });
