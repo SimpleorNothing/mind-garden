@@ -10,7 +10,10 @@ android {
         versionName = "0.4.2"
         manifestPlaceholders["appLabel"] = "Mind Garden 0.4"
     }
-    signingConfigs.getByName("debug") {\n        storeFile = java.io.File(System.getenv("HOME"), ".android/debug.keystore")\n    }\n    buildTypes {
+    signingConfigs.getByName("debug") {
+        storeFile = file(System.getenv("HOME") + "/.android/debug.keystore")
+    }
+    buildTypes {
         create("live") {
             initWith(getByName("debug"))
             applicationIdSuffix = ".live"
