@@ -19,8 +19,12 @@ jobs:
         with:
           path: ~/.android/debug.keystore
           key: mind-garden-debug-signing-v1
-      - run: gradle assembleDebug
+      - run: gradle assembleDebug assembleLive
       - uses: actions/upload-artifact@v4
         with:
           name: mind-garden-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mind-garden-live-apk
+          path: app/build/outputs/apk/live/app-live.apk
