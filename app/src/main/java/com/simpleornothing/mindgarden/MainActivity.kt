@@ -10,14 +10,28 @@ import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import org.json.JSONObject
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 
 class MainActivity : AppCompatActivity() {
     private lateinit var web: WebView
+    private var pendingBackup: String? = null
     private var fileCallback: ValueCallback<Array<Uri>>? = null
 
     private inner class AppBridge {
+        @JavascriptInterface
+        fun exportGardenBackup(json: String) {
+            if (json.length > 12 * 1024 * 1024) return
+            runOnUiThread {
+                pendingBackup = json
+                backupWriter.launch("mind-garden-backup.json")
+            }
+        }
+        @JavascriptInterface
+        fun importGardenBackup() {
+            runOnUiThread { backupReader.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) }
+        }
         @JavascriptInterface
         fun setKeepScreenOn(enabled: Boolean) {
             runOnUiThread {
@@ -27,6 +41,42 @@ class MainActivity : AppCompatActivity() {
                     window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                 }
             }
+        }
+    }
+
+    private fun backupResult(ok: Boolean, message: String) {
+        web.evaluateJavascript("window.mindGardenBackupResult && window.mindGardenBackupResult($ok,${JSONObject.quote(message)})", null)
+    }
+    private val backupWriter = registerForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+        val json = pendingBackup
+        pendingBackup = null
+        if (uri != null && json != null) {
+            try {
+                val stream = contentResolver.openOutputStream(uri) ?: error("Cannot open backup")
+                stream.bufferedWriter(Charsets.UTF_8).use { it.write(json) }
+                backupResult(true, "백업 파일을 저장했습니다.")
+            } catch (_: Exception) { backupResult(false, "백업 파일을 저장하지 못했습니다.") }
+        }
+    }
+    private val backupReader = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            try {
+                val stream = contentResolver.openInputStream(uri) ?: error("Cannot open backup")
+                val bytes = stream.use { input ->
+                    val output = java.io.ByteArrayOutputStream()
+                    val buffer = ByteArray(8192)
+                    while (true) {
+                        val count = input.read(buffer)
+                        if (count < 0) break
+                        require(output.size() + count <= 12 * 1024 * 1024)
+                        output.write(buffer, 0, count)
+                    }
+                    output.toByteArray()
+                }
+                require(bytes.size <= 12 * 1024 * 1024)
+                val json = bytes.toString(Charsets.UTF_8)
+                web.evaluateJavascript("window.mindGardenRestoreBackup && window.mindGardenRestoreBackup(${JSONObject.quote(json)})", null)
+            } catch (_: Exception) { backupResult(false, "백업 파일을 읽지 못했습니다.") }
         }
     }
 

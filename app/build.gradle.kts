@@ -6,8 +6,8 @@ android {
         applicationId = "com.simpleornothing.mindgarden.app.v04"
         minSdk = 26
         targetSdk = 35
-        versionCode = 4
-        versionName = "0.4.0"
+        versionCode = 5
+        versionName = "0.4.1"
         manifestPlaceholders["appLabel"] = "Mind Garden 0.4"
     }
     buildTypes {
