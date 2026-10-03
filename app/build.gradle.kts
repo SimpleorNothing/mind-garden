@@ -8,6 +8,16 @@ android {
         targetSdk = 35
         versionCode = 4
         versionName = "0.4.0"
+        manifestPlaceholders["appLabel"] = "Mind Garden 0.4"
+    }
+    buildTypes {
+        create("live") {
+            initWith(getByName("debug"))
+            applicationIdSuffix = ".live"
+            versionNameSuffix = "-live"
+            manifestPlaceholders["appLabel"] = "Mind Garden LIVE"
+            matchingFallbacks += listOf("debug")
+        }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
