@@ -253,11 +253,9 @@ function startRest(){
   if(running||total>=growthTargetMs())return;
   running=true;start=Date.now();rest.textContent='휴식 종료';room.classList.add('active');
   msg.textContent='광합성 중이에요. 화면은 켜진 상태로 유지됩니다.';
-  window.MindGardenRestMusic?.start();
   setScreenAwake(true);draw();
 }
 function stopRest(reason='manual'){
-  window.MindGardenRestMusic?.stop();
   if(!running)return;
   const elapsed=Date.now()-start;
   total+=elapsed;localStorage.sun=total;recordFocus(elapsed);
@@ -289,10 +287,6 @@ function harvestPlant(){
   showReward(sp.name+' 완성 · +'+reward+'P');
   msg.textContent=reward>100?'오늘 첫 완성 보너스까지 받았어요.':'완성한 식물이 내 정원에 보관됐어요.';
   draw();
-}
-if(window.MindGardenRestMusic){
-  window.MindGardenRestMusic.isResting=()=>running;
-  window.MindGardenRestMusic.onError=()=>showReward('음악을 재생하지 못했어요. 음악 버튼을 껐다 켜서 다시 시도해 주세요.');
 }
 rest.onclick=()=>running?stopRest('manual'):startRest();
 harvest.onclick=harvestPlant;
