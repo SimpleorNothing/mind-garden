@@ -6,9 +6,12 @@ android {
         applicationId = "com.simpleornothing.mindgarden.app.v04"
         minSdk = 26
         targetSdk = 35
-        versionCode = 5
-        versionName = "0.4.1"
+        versionCode = 6
+        versionName = "0.4.2"
         manifestPlaceholders["appLabel"] = "Mind Garden 0.4"
+    }
+    signingConfigs.getByName("debug") {
+        storeFile = file(System.getenv("HOME") + "/.android/debug.keystore")
     }
     buildTypes {
         create("live") {

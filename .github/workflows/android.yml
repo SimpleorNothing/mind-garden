@@ -5,7 +5,7 @@ on:
     paths: ["app/**","*.gradle.kts","gradle.properties","settings.gradle.kts"]
   pull_request:
     branches: [main]
-    paths: ["app/**","web/sync.js","tests/**","*.gradle.kts","gradle.properties","settings.gradle.kts",".github/workflows/android.yml"]
+    paths: ["app/**","web/local-store.js","tests/**","*.gradle.kts","gradle.properties","settings.gradle.kts",".github/workflows/android.yml"]
   workflow_dispatch:
 permissions:
   contents: read
@@ -21,9 +21,15 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ~/.android/debug.keystore
-          key: mind-garden-debug-signing-v1
-      - name: Validate garden sync
-        run: node --test tests/garden-sync.test.cjs
+          key: mind-garden-stable-debug-signing-v2
+      - name: Prepare persistent update signing key
+        run: |
+          mkdir -p "$HOME/.android"
+          if [ ! -f "$HOME/.android/debug.keystore" ]; then
+            keytool -genkeypair -keystore "$HOME/.android/debug.keystore" -storepass android -keypass android -alias androiddebugkey -dname "CN=Android Debug,O=Android,C=US" -keyalg RSA -keysize 2048 -validity 10000
+          fi
+      - name: Validate local garden storage
+        run: node --test tests/local-store.test.cjs
       - run: gradle assembleDebug assembleLive
       - uses: actions/upload-artifact@v4
         with:
@@ -33,3 +39,4 @@ jobs:
         with:
           name: mind-garden-live-apk
           path: app/build/outputs/apk/live/app-live.apk
+
