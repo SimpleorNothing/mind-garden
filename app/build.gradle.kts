@@ -6,8 +6,8 @@ android {
         applicationId = "com.simpleornothing.mindgarden.app.v04"
         minSdk = 26
         targetSdk = 35
-        versionCode = 7
-        versionName = "0.4.3"
+        versionCode = 8
+        versionName = "0.4.4"
         manifestPlaceholders["appLabel"] = "Mind Garden 0.4"
     }
     signingConfigs.getByName("debug") {
