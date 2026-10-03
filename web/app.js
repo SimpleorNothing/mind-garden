@@ -94,9 +94,6 @@ function loadMeta(){
   return m;
 }
 let meta=loadMeta(),total=+(localStorage.sun||0),running=false,start=0,wakeLock=null;
-const FOCUS_KEY='mindGardenFocusSessionV1';
-let focusSession=null;
-try{const saved=JSON.parse(localStorage.getItem(FOCUS_KEY)||'null');if(saved&&['reading','study'].includes(saved.mode)&&Number.isFinite(saved.startedAt)&&Number.isFinite(saved.durationMs)&&saved.durationMs>0)focusSession=saved}catch(_){}
 
 function saveMeta(){localStorage.setItem(META_KEY,JSON.stringify(meta))}
 function catalogItem(type,id){return CATALOG[type].find(x=>x.id===id)||CATALOG[type][0]}
@@ -219,63 +216,9 @@ function recordFocus(ms,day=localDateKey()){
   }
   saveMeta();
 }
-const focusLabels={reading:'독서',study:'공부'};
-let focusMode='reading';
-function focusElapsed(){return focusSession?Math.min(focusSession.durationMs,Math.max(0,Date.now()-focusSession.startedAt)):0}
-function creditFocus(session,elapsed){
-  if(elapsed<=0)return;
-  total+=elapsed;localStorage.sun=total;
-  const day=localDateKey(new Date(session.startedAt));
-  recordFocus(elapsed,day);
-  meta.focusByDay=meta.focusByDay||{};
-  meta.focusByDay[day]=meta.focusByDay[day]||{reading:0,study:0};
-  meta.focusByDay[day][session.mode]=(meta.focusByDay[day][session.mode]||0)+elapsed;
-  saveMeta();
-}
-function finishFocus(completed=false){
-  if(!focusSession)return;
-  const session=focusSession,elapsed=focusElapsed();
-  focusSession=null;localStorage.removeItem(FOCUS_KEY);
-  creditFocus(session,elapsed);
-  q('#focusMessage').textContent=completed?focusLabels[session.mode]+' '+Math.round(elapsed/MIN)+'분을 마쳤어요. 식물이 자랐습니다.':elapsed<MIN?'집중을 마쳤어요. 짧은 시간도 차곡차곡 기록했어요.':focusLabels[session.mode]+' '+Math.round(elapsed/MIN)+'분을 기록했어요.';
-  renderFocus();draw();
-}
-function renderFocus(){
-  const active=!!focusSession,mode=active?focusSession.mode:focusMode;
-  q('#focusReading').classList.toggle('selected',mode==='reading');
-  q('#focusStudy').classList.toggle('selected',mode==='study');
-  q('#focusReading').setAttribute('aria-pressed',String(mode==='reading'));
-  q('#focusStudy').setAttribute('aria-pressed',String(mode==='study'));
-  q('#focusReading').disabled=active;q('#focusStudy').disabled=active;
-  q('#focusDuration').disabled=active;
-  const remaining=active?Math.max(0,focusSession.durationMs-focusElapsed()):Number(q('#focusDuration').value)*MIN;
-  q('#focusClock').textContent=String(Math.floor(remaining/MIN)).padStart(2,'0')+':'+String(Math.floor(remaining/1000)%60).padStart(2,'0');
-  q('#focusStart').hidden=active;q('#focusStop').hidden=!active;
-  q('#focusStart').textContent=focusLabels[mode]+' 시작';
-  const today=meta.focusByDay?.[localDateKey()]||{};
-  q('#readingToday').textContent=Math.floor(((today.reading||0)+(active&&mode==='reading'?focusElapsed():0))/MIN)+'분';
-  q('#studyToday').textContent=Math.floor(((today.study||0)+(active&&mode==='study'?focusElapsed():0))/MIN)+'분';
-}
-function startFocus(){
-  if(focusSession)return;
-  if(!meta.active.planted){showReward('먼저 꽃 씨앗을 심어주세요');return}
-  if(running)stopRest('manual');
-  focusSession={mode:focusMode,startedAt:Date.now(),durationMs:Number(q('#focusDuration').value)*MIN};
-  localStorage.setItem(FOCUS_KEY,JSON.stringify(focusSession));
-  q('#focusMessage').textContent=focusLabels[focusMode]+' 중입니다. 화면을 꺼도 타이머는 이어져요.';
-  renderFocus();draw();
-}
-q('#focusReading').onclick=()=>{focusMode='reading';renderFocus()};
-q('#focusStudy').onclick=()=>{focusMode='study';renderFocus()};
-q('#focusDuration').onchange=renderFocus;
-q('#focusStart').onclick=startFocus;
-q('#focusStop').onclick=()=>finishFocus(false);
-renderFocus();
 function draw(){
   if(running&&total+Date.now()-start>=growthTargetMs()){stopRest('complete');return}
-  if(focusSession&&focusElapsed()>=focusSession.durationMs)finishFocus(true);
-  let t=total+(running?Date.now()-start:0)+focusElapsed(),m=Math.floor(t/MIN),sec=Math.floor(t/1000)%60;
-  renderFocus();
+  let t=total+(running?Date.now()-start:0),m=Math.floor(t/MIN),sec=Math.floor(t/1000)%60;
   const target=activeSpecies().growthMinutes,ratio=meta.active.planted?Math.min(1,t/(target*MIN)):0;
   time.textContent=String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');
   renderPlantVisual(ratio,m);
@@ -306,7 +249,6 @@ async function setScreenAwake(on){
   }catch(_){wakeLock=null}
 }
 function startRest(){
-  if(focusSession){showReward('진행 중인 집중 시간을 먼저 마쳐주세요');return}
   if(!meta.active.planted){showReward('먼저 꽃 씨앗을 심어주세요');return}
   if(running||total>=growthTargetMs())return;
   running=true;start=Date.now();rest.textContent='휴식 종료';room.classList.add('active');
@@ -324,7 +266,6 @@ function stopRest(reason='manual'){
   draw();
 }
 function harvestPlant(){
-  if(focusSession)finishFocus(false);
   if(running)stopRest('manual');
   const sp=activeSpecies();
   if(total<growthTargetMs())return;
