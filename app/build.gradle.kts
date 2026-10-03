@@ -6,8 +6,8 @@ android {
         applicationId = "com.simpleornothing.mindgarden.app.v04"
         minSdk = 26
         targetSdk = 35
-        versionCode = 6
-        versionName = "0.4.2"
+        versionCode = 7
+        versionName = "0.4.3"
         manifestPlaceholders["appLabel"] = "Mind Garden 0.4"
     }
     signingConfigs.getByName("debug") {
@@ -21,6 +21,14 @@ android {
             manifestPlaceholders["appLabel"] = "Mind Garden LIVE"
             matchingFallbacks += listOf("debug")
         }
+    }
+    buildTypes.create("local") {
+        initWith(buildTypes.getByName("live"))
+        applicationIdSuffix = ".local"
+        versionNameSuffix = "-local"
+        isDebuggable = false
+        manifestPlaceholders["appLabel"] = "Mind Garden"
+        matchingFallbacks += listOf("live", "debug")
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

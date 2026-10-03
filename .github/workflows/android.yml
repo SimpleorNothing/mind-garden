@@ -30,7 +30,7 @@ jobs:
           fi
       - name: Validate local garden storage
         run: node --test tests/local-store.test.cjs
-      - run: gradle assembleDebug assembleLive
+      - run: gradle assembleDebug assembleLive assembleLocal
       - uses: actions/upload-artifact@v4
         with:
           name: mind-garden-debug-apk
@@ -40,3 +40,7 @@ jobs:
           name: mind-garden-live-apk
           path: app/build/outputs/apk/live/app-live.apk
 
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mind-garden-local-apk
+          path: app/build/outputs/apk/local/app-local.apk
