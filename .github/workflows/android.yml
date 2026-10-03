@@ -3,6 +3,9 @@ on:
   push:
     branches: [main]
     paths: ["app/**","*.gradle.kts","gradle.properties","settings.gradle.kts"]
+  pull_request:
+    branches: [main]
+    paths: ["app/**","web/sync.js","tests/**","*.gradle.kts","gradle.properties","settings.gradle.kts",".github/workflows/android.yml"]
   workflow_dispatch:
 permissions:
   contents: read
@@ -19,6 +22,8 @@ jobs:
         with:
           path: ~/.android/debug.keystore
           key: mind-garden-debug-signing-v1
+      - name: Validate garden sync
+        run: node --test tests/garden-sync.test.cjs
       - run: gradle assembleDebug assembleLive
       - uses: actions/upload-artifact@v4
         with:
