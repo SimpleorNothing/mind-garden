@@ -2,10 +2,10 @@ name: Build Mind Garden APK
 on:
   push:
     branches: [main]
-    paths: ["app/**","*.gradle.kts","gradle.properties","settings.gradle.kts"]
+    paths: ["app/**","tools/generate_meditation.py","*.gradle.kts","gradle.properties","settings.gradle.kts"]
   pull_request:
     branches: [main]
-    paths: ["app/**","web/local-store.js","tests/**","*.gradle.kts","gradle.properties","settings.gradle.kts",".github/workflows/android.yml"]
+    paths: ["app/**","tools/generate_meditation.py","web/local-store.js","tests/**","*.gradle.kts","gradle.properties","settings.gradle.kts",".github/workflows/android.yml"]
   workflow_dispatch:
 permissions:
   contents: read
@@ -30,6 +30,8 @@ jobs:
           fi
       - name: Validate local garden storage
         run: node --test tests/*.test.cjs
+      - name: Generate offline meditation recording
+        run: python3 tools/generate_meditation.py
       - run: gradle assembleDebug assembleLive assembleLocal
       - uses: actions/upload-artifact@v4
         with:

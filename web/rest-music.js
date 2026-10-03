@@ -1,11 +1,12 @@
 /* Original, offline meditation melody. Audio starts only from a rest/control tap. */
 (()=>{
-  let context=null,master=null,timer=null,session=0,enabled=true,volume=0.3;
+  let context=null,master=null,timer=null,session=0,enabled=true,volume=0.65;
   const melody=[0,4,7,11,7,4,2,7,9,14,9,7,4,9,11,16,11,9,2,7,4,0,4,7];
   const button=document.querySelector('#restMusicToggle'),slider=document.querySelector('#restMusicVolume');
   function label(){button.textContent=enabled?'♫ 명상음악 켜짐':'♫ 명상음악 꺼짐';button.setAttribute('aria-pressed',String(enabled));}
   function stop(){
     session++;
+    window.AndroidBridge?.stopRestMusic?.();
     if(timer!==null)clearInterval(timer);
     timer=null;
     const old=context;context=null;master=null;
@@ -23,6 +24,10 @@
   }
   async function start(){
     stop();if(!enabled)return;
+    if(window.AndroidBridge?.startRestMusic){
+      try{window.AndroidBridge.startRestMusic(volume);}catch(_){window.MindGardenRestMusic.onError?.();}
+      return;
+    }
     const Audio=window.AudioContext||window.webkitAudioContext;
     if(!Audio){window.MindGardenRestMusic.onError?.();return;}
     const id=session;
@@ -48,8 +53,9 @@
   }
   window.MindGardenRestMusic={start,stop,isResting:()=>false,onError:null};
   button.onclick=()=>{enabled=!enabled;label();if(enabled&&window.MindGardenRestMusic.isResting())start();else stop();};
-  slider.oninput=()=>{volume=Number(slider.value)/100;if(master)master.gain.setTargetAtTime(volume,context.currentTime,0.15);};
+  slider.oninput=()=>{volume=Number(slider.value)/100;window.AndroidBridge?.setRestMusicVolume?.(volume);if(master)master.gain.setTargetAtTime(volume,context.currentTime,0.15);};
   document.addEventListener('visibilitychange',()=>{if(document.hidden)stop();});
   window.addEventListener('pagehide',stop);
+  slider.value=String(volume*100);
   label();
 })();

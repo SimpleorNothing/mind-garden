@@ -1,5 +1,8 @@
 package com.simpleornothing.mindgarden
 
+import android.media.MediaPlayer
+import android.media.AudioAttributes
+import android.media.AudioManager
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
@@ -17,6 +20,7 @@ import androidx.appcompat.app.AppCompatActivity
 class MainActivity : AppCompatActivity() {
     private lateinit var web: WebView
     private lateinit var gardenStore: LocalGardenStore
+    private var restPlayer: MediaPlayer? = null
     private var fileCallback: ValueCallback<Array<Uri>>? = null
 
     private inner class AppBridge {
@@ -24,6 +28,45 @@ class MainActivity : AppCompatActivity() {
         fun gardenLocalRequest(id: String, operation: String, payload: String) {
             runOnUiThread {
                 if (web.url?.startsWith("file:///android_asset/") == true) gardenStore.request(id, operation, payload)
+            }
+        }
+        @JavascriptInterface
+        fun startRestMusic(volume: Double) {
+            runOnUiThread {
+                if (web.url?.startsWith("file:///android_asset/") != true || isFinishing) return@runOnUiThread
+                stopRestMusicPlayer()
+                try {
+                    val player = MediaPlayer()
+                    restPlayer = player
+                    player.setAudioAttributes(AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_MEDIA)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build())
+                    resources.openRawResourceFd(R.raw.meditation).use { fd ->
+                        player.setDataSource(fd.fileDescriptor, fd.startOffset, fd.length)
+                    }
+                    player.isLooping = true
+                    val level = volume.toFloat().coerceIn(0f, 1f)
+                    player.setVolume(level, level)
+                    player.setOnErrorListener { _, _, _ ->
+                        stopRestMusicPlayer()
+                        web.evaluateJavascript("window.MindGardenRestMusic?.onError?.()", null)
+                        true
+                    }
+                    player.prepare()
+                    player.start()
+                } catch (_: Exception) {
+                    stopRestMusicPlayer()
+                    web.evaluateJavascript("window.MindGardenRestMusic?.onError?.()", null)
+                }
+            }
+        }
+        @JavascriptInterface
+        fun stopRestMusic() { runOnUiThread { stopRestMusicPlayer() } }
+        @JavascriptInterface
+        fun setRestMusicVolume(volume: Double) {
+            runOnUiThread {
+                val level = volume.toFloat().coerceIn(0f, 1f)
+                restPlayer?.setVolume(level, level)
             }
         }
         @JavascriptInterface
@@ -54,6 +97,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        volumeControlStream = AudioManager.STREAM_MUSIC
         web = WebView(this)
         setContentView(web)
         web.settings.javaScriptEnabled = true
@@ -108,7 +152,18 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun stopRestMusicPlayer() {
+        restPlayer?.release()
+        restPlayer = null
+    }
+
+    override fun onDestroy() {
+        stopRestMusicPlayer()
+        super.onDestroy()
+    }
+
     override fun onPause() {
+        stopRestMusicPlayer()
         if (::web.isInitialized) {
             web.evaluateJavascript(
                 "window.mindGardenPauseForBackground && window.mindGardenPauseForBackground(); window.MindGardenLocalStore && window.MindGardenLocalStore.flush()",
